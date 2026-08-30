@@ -1,0 +1,685 @@
+// This is your Prisma schema file configured for local SQLite or MySQL
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  WORKER
+  EMPLOYER
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_VERIFICATION
+}
+
+enum JobStatus {
+  DRAFT
+  SCHEDULED
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  COMPLETED
+  EXPIRED
+  REJECTED
+  CANCELLED
+}
+
+enum JobVisibility {
+  NORMAL
+  PINNED
+  PREMIUM
+}
+
+enum TargetType {
+  GLOBAL
+  REGION
+  COUNTRY
+}
+
+enum TaskStatus {
+  RESERVED
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  REJECTED
+  RESUBMIT_REQUIRED
+  EXPIRED
+  CANCELLED
+}
+
+enum ProofType {
+  TEXT
+  URL
+  IMAGE
+  FILE
+}
+
+enum TransactionType {
+  TASK_REWARD
+  TASK_REVERSAL
+  DEPOSIT
+  DEPOSIT_FEE
+  WITHDRAWAL_REQUEST
+  WITHDRAWAL_APPROVED
+  WITHDRAWAL_REJECTED
+  WITHDRAWAL_FEE
+  REFERRAL_COMMISSION
+  ADMIN_ADJUSTMENT
+  JOB_BUDGET_LOCK
+  JOB_BUDGET_RELEASE
+  JOB_BUDGET_SPEND
+  PLATFORM_FEE
+  SCREENSHOT_FEE
+  BOOST_FEE
+}
+
+enum TransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+enum DepositStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+enum ReferralSourceType {
+  DEPOSIT
+  TASK
+}
+
+enum NotificationType {
+  TASK_APPROVED
+  TASK_REJECTED
+  TASK_RESUBMIT
+  JOB_PAUSED
+  JOB_COMPLETED
+  JOB_REJECTED
+  WITHDRAWAL_APPROVED
+  WITHDRAWAL_REJECTED
+  WITHDRAWAL_PROCESSING
+  DEPOSIT_CONFIRMED
+  DEPOSIT_REJECTED
+  REFERRAL_COMMISSION
+  ACCOUNT_SUSPENDED
+  ACCOUNT_ACTIVATED
+  SYSTEM
+}
+
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FraudFlagStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_USER
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum PaymentMethodType {
+  BKASH
+  NAGAD
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id               String     @id @default(uuid())
+  name             String
+  email            String     @unique
+  passwordHash     String
+  role             Role       @default(WORKER)
+  status           UserStatus @default(PENDING_VERIFICATION)
+  avatarUrl        String?
+  phone            String?
+  bio              String?
+  countryId        String?
+  referralCode     String     @unique
+  referredByUserId String?
+
+  emailVerifiedAt  DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  // Relations
+  country          Country?              @relation(fields: [countryId], references: [id])
+  referredBy       User?                 @relation("Referrals", fields: [referredByUserId], references: [id])
+  referrals        User[]                @relation("Referrals")
+  wallet           Wallet?
+  jobs             Job[]                 @relation("EmployerJobs")
+  taskAssignments  TaskAssignment[]      @relation("WorkerTasks")
+  reviewedTasks    TaskAssignment[]      @relation("ReviewerTasks")
+  withdrawals      WithdrawalRequest[]
+  deposits         Deposit[]
+  referralsMade    Referral[]            @relation("ReferrerReferrals")
+  referralReceived Referral?             @relation("ReferredUserReferral")
+  notifications    Notification[]
+  auditLogs        AuditLog[]            @relation("ActorAuditLogs")
+  fraudFlags       FraudFlag[]
+  supportTickets   SupportTicket[]       @relation("UserTickets")
+  assignedTickets  SupportTicket[]       @relation("AssignedTickets")
+  refreshTokens    RefreshToken[]
+
+  @@index([email])
+  @@index([referralCode])
+  @@index([role])
+  @@index([status])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ─────────────────────────────────────────────
+// CATEGORY
+// ─────────────────────────────────────────────
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  slug         String        @unique
+  description  String?
+  icon         String?
+  isActive     Boolean       @default(true)
+  sortOrder    Int           @default(0)
+  createdAt    DateTime      @default(now())
+
+  subcategories Subcategory[]
+  jobs         Job[]
+}
+
+model Subcategory {
+  id              String   @id @default(uuid())
+  categoryId      String
+  name            String
+  slug            String
+  description     String?
+  defaultReward   Decimal  @default(0.02)
+  defaultCriteria String?
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  category    Category @relation(fields: [categoryId], references: [id])
+  jobs        Job[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+}
+
+// ─────────────────────────────────────────────
+// PAYMENT METHODS (Admin-Configurable)
+// ─────────────────────────────────────────────
+
+model PaymentMethod {
+  id          String            @id @default(uuid())
+  name        String
+  type        PaymentMethodType
+  number      String
+  accountName String?
+  isActive    Boolean           @default(true)
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+}
+
+// ─────────────────────────────────────────────
+// COUNTRY
+// ─────────────────────────────────────────────
+
+model Country {
+  id        String  @id @default(uuid())
+  name      String
+  code      String  @unique  // ISO 3166-1 alpha-2
+  region    String?
+  isActive  Boolean @default(true)
+
+  users     User[]
+  jobTargets JobTarget[]
+}
+
+// ─────────────────────────────────────────────
+// JOB
+// ─────────────────────────────────────────────
+
+model Job {
+  id                    String        @id @default(uuid())
+  employerId            String
+  categoryId            String
+  subcategoryId         String?
+  title                 String
+  shortDescription      String?
+  instructions          String
+  proofRequirements     String
+  proofTypes            String        @default("TEXT")  // comma-separated ProofType values
+  requiresScreenshot    Boolean       @default(false)
+  targetUrl             String?
+  rewardPerWorker       Decimal
+  totalWorkers          Int
+  completedWorkers      Int           @default(0)
+  approvedWorkers       Int           @default(0)
+  rejectedWorkers       Int           @default(0)
+
+  // Financial snapshot (stored at creation time, immutable)
+  baseWorkerBudget      Decimal       @default(0)
+  platformFeePercent    Decimal       @default(10)
+  platformFeeAmount     Decimal       @default(0)
+  screenshotFeePercent  Decimal       @default(0)
+  screenshotFeeAmount   Decimal       @default(0)
+  boostDuration         Int?          // in minutes
+  boostCost             Decimal       @default(0)
+  totalCharge           Decimal       @default(0)
+
+  // Boost tracking
+  boostStartedAt        DateTime?
+  boostExpiresAt        DateTime?
+
+  // Scheduling
+  estimatedDays         Int           @default(3)
+  scheduledAt           DateTime?
+  estimatedCompletionAt DateTime?
+  publishedAt           DateTime?
+
+  // Legacy/compat
+  platformFee           Decimal       @default(0)
+
+  status             JobStatus     @default(DRAFT)
+  visibility         JobVisibility @default(NORMAL)
+  priority           Int           @default(0)
+  rejectionReason    String?
+  taskExpiryHours    Int           @default(48)
+  maxResubmissions   Int           @default(3)
+  startAt            DateTime?
+  endAt              DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  employer           User          @relation("EmployerJobs", fields: [employerId], references: [id])
+  category           Category      @relation(fields: [categoryId], references: [id])
+  subcategory        Subcategory?  @relation(fields: [subcategoryId], references: [id])
+  targets            JobTarget[]
+  assignments        TaskAssignment[]
+
+  @@index([employerId])
+  @@index([status])
+  @@index([categoryId])
+  @@index([visibility])
+  @@index([boostExpiresAt])
+  @@index([scheduledAt])
+}
+
+model JobTarget {
+  id          String     @id @default(uuid())
+  jobId       String
+  targetType  TargetType @default(GLOBAL)
+  regionCode  String?
+  countryCode String?
+  countryId   String?
+
+  job         Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  country     Country?   @relation(fields: [countryId], references: [id])
+
+  @@index([jobId])
+}
+
+// ─────────────────────────────────────────────
+// TASK ASSIGNMENT
+// ─────────────────────────────────────────────
+
+model TaskAssignment {
+  id               String     @id @default(uuid())
+  jobId            String
+  workerId         String
+  status           TaskStatus @default(RESERVED)
+  startedAt        DateTime   @default(now())
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  reviewerId       String?
+  rejectionReason  String?
+  rewardAmount     Decimal
+  resubmitCount    Int        @default(0)
+  expiresAt        DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  job              Job              @relation(fields: [jobId], references: [id])
+  worker           User             @relation("WorkerTasks", fields: [workerId], references: [id])
+  reviewer         User?            @relation("ReviewerTasks", fields: [reviewerId], references: [id])
+  proofs           SubmissionProof[]
+
+  @@unique([jobId, workerId])
+  @@index([jobId])
+  @@index([workerId])
+  @@index([status])
+}
+
+model SubmissionProof {
+  id           String    @id @default(uuid())
+  assignmentId String
+  type         ProofType
+  content      String?
+  fileUrl      String?
+  fileName     String?
+  fileSize     Int?
+  mimeType     String?
+  createdAt    DateTime  @default(now())
+
+  assignment   TaskAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+}
+
+// ─────────────────────────────────────────────
+// WALLET
+// ─────────────────────────────────────────────
+
+model Wallet {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  currency         String   @default("USD")
+  availableBalance Decimal  @default(0)
+  pendingBalance   Decimal  @default(0)
+  lockedBalance    Decimal  @default(0)
+  depositBalance   Decimal  @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id])
+  transactions     WalletTransaction[]
+
+  @@index([userId])
+}
+
+model WalletTransaction {
+  id             String               @id @default(uuid())
+  walletId       String
+  type           TransactionType
+  amount         Decimal
+  direction      TransactionDirection
+  status         TransactionStatus    @default(COMPLETED)
+  referenceType  String?
+  referenceId    String?
+  description    String?
+  balanceAfter   Decimal
+  createdAt      DateTime             @default(now())
+
+  wallet         Wallet               @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([type])
+  @@index([referenceType, referenceId])
+}
+
+// ─────────────────────────────────────────────
+// WITHDRAWAL
+// ─────────────────────────────────────────────
+
+model WithdrawalRequest {
+  id                       String           @id @default(uuid())
+  userId                   String
+  amount                   Decimal
+  fee                      Decimal          @default(0)
+  feePercent               Decimal          @default(6)
+  netAmount                Decimal
+  method                   String
+  accountName              String?
+  accountDetails           String
+  status                   WithdrawalStatus @default(PENDING)
+  rejectionReason          String?
+  externalReference        String?
+  processedByAdminId       String?
+  requestedAt              DateTime         @default(now())
+  processedAt              DateTime?
+  updatedAt                DateTime         @updatedAt
+
+  user                     User             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// DEPOSIT
+// ─────────────────────────────────────────────
+
+model Deposit {
+  id                  String        @id @default(uuid())
+  userId              String
+  amount              Decimal
+  currency            String        @default("USD")
+  paymentMethod       String
+  paymentMethodId     String?
+  providerReference   String?
+  status              DepositStatus @default(PENDING)
+  confirmedByAdminId  String?
+  rejectedByAdminId   String?
+  rejectionReason     String?
+  notes               String?
+  createdAt           DateTime      @default(now())
+  confirmedAt         DateTime?
+  rejectedAt          DateTime?
+
+  user             User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// REFERRAL
+// ─────────────────────────────────────────────
+
+model Referral {
+  id             String   @id @default(uuid())
+  referrerId     String
+  referredUserId String   @unique
+  createdAt      DateTime @default(now())
+
+  referrer       User     @relation("ReferrerReferrals", fields: [referrerId], references: [id])
+  referredUser   User     @relation("ReferredUserReferral", fields: [referredUserId], references: [id])
+  commissions    ReferralCommission[]
+
+  @@index([referrerId])
+}
+
+model ReferralCommission {
+  id                 String             @id @default(uuid())
+  referralId         String
+  sourceType         ReferralSourceType
+  sourceAmount       Decimal
+  commissionRate     Decimal
+  commissionAmount   Decimal
+  walletTransactionId String?
+  createdAt          DateTime           @default(now())
+
+  referral           Referral           @relation(fields: [referralId], references: [id])
+
+  @@index([referralId])
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATION
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String?
+  action      String
+  entityType  String
+  entityId    String?
+  oldValue    String?
+  newValue    String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  actor       User?    @relation("ActorAuditLogs", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────
+// FRAUD FLAG
+// ─────────────────────────────────────────────
+
+model FraudFlag {
+  id           String          @id @default(uuid())
+  userId       String
+  assignmentId String?
+  ruleCode     String
+  severity     FraudSeverity   @default(MEDIUM)
+  details      String?
+  status       FraudFlagStatus @default(OPEN)
+  createdAt    DateTime        @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  user         User            @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([ruleCode])
+}
+
+// ─────────────────────────────────────────────
+// PLATFORM SETTINGS
+// ─────────────────────────────────────────────
+
+model PlatformSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string") // string | number | boolean | json
+  label     String?
+  group     String?
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([group])
+}
+
+// ─────────────────────────────────────────────
+// SUPPORT TICKET
+// ─────────────────────────────────────────────
+
+model SupportTicket {
+  id           String                @id @default(uuid())
+  userId       String
+  subject      String
+  category     String
+  priority     SupportTicketPriority @default(MEDIUM)
+  status       SupportTicketStatus   @default(OPEN)
+  assignedToId String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  user         User                  @relation("UserTickets", fields: [userId], references: [id])
+  assignedTo   User?                 @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  messages     TicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TicketMessage {
+  id           String        @id @default(uuid())
+  ticketId     String
+  senderId     String
+  message      String
+  attachments  String?
+  isInternal   Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+
+  ticket       SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
