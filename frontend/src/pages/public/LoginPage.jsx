@@ -1,21 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '../../context/AuthContext';
-import { Zap, Lock, Mail, ArrowRight, ShieldCheck, Shield, Briefcase, UserCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Zap, Lock, Mail, ArrowRight, Shield, Briefcase, UserCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
 });
-
-const DEMO_ACCOUNTS = {
-  WORKER: { email: 'worker@test.com', password: 'password123', label: 'Worker Account', role: 'WORKER' },
-  EMPLOYER: { email: 'employer@test.com', password: 'password123', label: 'Employer Account', role: 'EMPLOYER' },
-  ADMIN: { email: 'admin@taskhive.com', password: 'password123', label: 'Administrator Account', role: 'ADMIN' },
-};
 
 export const LoginPage = () => {
   const { login } = useAuth();
@@ -31,52 +25,14 @@ export const LoginPage = () => {
     initialRoleParam === 'ADMIN' ? 'ADMIN' : initialRoleParam === 'EMPLOYER' ? 'EMPLOYER' : 'WORKER'
   );
 
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: DEMO_ACCOUNTS[initialRoleParam === 'ADMIN' ? 'ADMIN' : initialRoleParam === 'EMPLOYER' ? 'EMPLOYER' : 'WORKER'].email,
-      password: 'password123',
-    },
+    defaultValues: { email: '', password: '' },
   });
-
-  useEffect(() => {
-    const roleParam = searchParams.get('role')?.toUpperCase();
-    if (roleParam && DEMO_ACCOUNTS[roleParam]) {
-      setActiveRole(roleParam);
-      setValue('email', DEMO_ACCOUNTS[roleParam].email, { shouldValidate: true });
-      setValue('password', DEMO_ACCOUNTS[roleParam].password, { shouldValidate: true });
-    }
-  }, [searchParams, setValue]);
 
   const selectRole = (role) => {
     setActiveRole(role);
     setLoginError('');
-    setValue('email', DEMO_ACCOUNTS[role].email, { shouldValidate: true });
-    setValue('password', DEMO_ACCOUNTS[role].password, { shouldValidate: true });
-  };
-
-  const handleQuickLogin = async (role) => {
-    setLoginError('');
-    const account = DEMO_ACCOUNTS[role];
-    setValue('email', account.email, { shouldValidate: true });
-    setValue('password', account.password, { shouldValidate: true });
-    setLoading(true);
-    const result = await login(account.email, account.password);
-    setLoading(false);
-    if (result.success) {
-      const from = location.state?.from?.pathname;
-      if (from) {
-        navigate(from, { replace: true });
-      } else if (result.user.role === 'ADMIN') {
-        navigate('/admin', { replace: true });
-      } else if (result.user.role === 'EMPLOYER') {
-        navigate('/employer/dashboard', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
-    } else {
-      setLoginError(result.message || 'Login failed');
-    }
   };
 
   const onSubmit = async (data) => {
@@ -157,48 +113,12 @@ export const LoginPage = () => {
           </button>
         </div>
 
-        {/* 1-Click Demo Login Box */}
-        <div className="glass-card rounded-2xl p-4 border border-[var(--color-border)] shadow-sm">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[11px] font-bold text-[var(--color-text)] flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-emerald-500" /> Instant 1-Click Demo Login:
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-[11px]">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleQuickLogin('WORKER')}
-              className="px-2 py-2 rounded-xl bg-[var(--color-surface2)] hover:border-[var(--color-text)] border border-[var(--color-border)] text-[var(--color-text)] font-bold text-center transition-all cursor-pointer shadow-sm hover:scale-102"
-            >
-              Worker Demo
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleQuickLogin('EMPLOYER')}
-              className="px-2 py-2 rounded-xl bg-[var(--color-surface2)] hover:border-[var(--color-text)] border border-[var(--color-border)] text-[var(--color-text)] font-bold text-center transition-all cursor-pointer shadow-sm hover:scale-102"
-            >
-              Employer Demo
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleQuickLogin('ADMIN')}
-              className="px-2 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-400/50 text-rose-600 dark:text-rose-400 font-bold text-center transition-all cursor-pointer shadow-sm hover:scale-102"
-            >
-              Admin Demo
-            </button>
-          </div>
-        </div>
-
         {/* Login Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="glass-panel rounded-3xl p-7 sm:p-8 space-y-5 shadow-2xl border border-[var(--color-border)]">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)]">
             <span className="text-xs font-extrabold text-[var(--color-text)] uppercase tracking-wider">
               {activeRole === 'ADMIN' ? '🛡️ Administrator Access' : activeRole === 'EMPLOYER' ? '💼 Employer Sign In' : '👷 Worker Sign In'}
             </span>
-            <span className="text-[10px] text-[var(--color-text-secondary)] font-mono">SQLite Local Auth</span>
           </div>
 
           {loginError && (
@@ -226,9 +146,7 @@ export const LoginPage = () => {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-bold text-[var(--color-text)]">Password</label>
-            </div>
+            <label className="block text-xs font-bold text-[var(--color-text)] mb-2">Password</label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]">
                 <Lock className="h-4 w-4" />
