@@ -105,14 +105,20 @@ const submitTask = asyncHandler(async (req, res) => {
   if (proofs && Array.isArray(proofs)) {
     for (const proof of proofs) {
       if (!proof) continue;
-      const isImg = proof.type === 'IMAGE' || (typeof proof.content === 'string' && proof.content.startsWith('data:image/')) || (typeof proof.fileUrl === 'string' && proof.fileUrl.startsWith('data:image/'));
-      const imgData = proof.fileUrl || (isImg ? proof.content : null);
-      
+      // Detect if this proof contains a Base64 image (from client-side FileReader)
+      const base64Data = proof.content?.startsWith('data:image/')
+        ? proof.content
+        : proof.fileUrl?.startsWith('data:image/')
+        ? proof.fileUrl
+        : null;
+      const isImg = proof.type === 'IMAGE' || !!base64Data;
+
       proofData.push({
         assignmentId: id,
         type: isImg ? 'IMAGE' : (proof.type || 'TEXT'),
-        content: isImg ? null : (proof.content || null),
-        fileUrl: imgData || null,
+        // Store base64 in `content` (MediumText) — NOT fileUrl (TEXT, too small)
+        content: isImg ? (base64Data || null) : (proof.content || null),
+        fileUrl: null, // Not used for base64 images
         fileName: proof.fileName || null,
         fileSize: proof.fileSize ? parseInt(proof.fileSize) : null,
         mimeType: proof.mimeType || (isImg ? 'image/png' : null),
@@ -123,20 +129,22 @@ const submitTask = asyncHandler(async (req, res) => {
   // 2. File proofs from multipart/form-data upload
   for (const file of files) {
     const isImage = file.mimetype.startsWith('image/');
-    let fileUrl = `/uploads/proofs/${file.filename}`;
+    let base64Content = null;
     try {
       if (isImage && fs.existsSync(file.path)) {
         const fileBuffer = fs.readFileSync(file.path);
-        fileUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        // Store in `content` (MediumText) to avoid TEXT column size limit
+        base64Content = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
       }
     } catch (e) {
-      console.error('Failed to encode image to base64, using fallback path', e);
+      console.error('Failed to encode image to base64:', e);
     }
 
     proofData.push({
       assignmentId: id,
       type: isImage ? 'IMAGE' : 'FILE',
-      fileUrl,
+      content: base64Content, // MediumText — can hold large base64 strings
+      fileUrl: null,          // Not used for images
       fileName: file.originalname,
       fileSize: file.size,
       mimeType: file.mimetype,
