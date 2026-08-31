@@ -101,19 +101,26 @@ const submitTask = asyncHandler(async (req, res) => {
 
   const proofData = [];
 
-  // Text/URL proofs from body
+  // 1. Proofs from request body (JSON / Base64 / Text / URL)
   if (proofs && Array.isArray(proofs)) {
     for (const proof of proofs) {
-      if (!proof.type || !proof.content) continue;
+      if (!proof) continue;
+      const isImg = proof.type === 'IMAGE' || (typeof proof.content === 'string' && proof.content.startsWith('data:image/')) || (typeof proof.fileUrl === 'string' && proof.fileUrl.startsWith('data:image/'));
+      const imgData = proof.fileUrl || (isImg ? proof.content : null);
+      
       proofData.push({
         assignmentId: id,
-        type: proof.type,
-        content: proof.content,
+        type: isImg ? 'IMAGE' : (proof.type || 'TEXT'),
+        content: isImg ? null : (proof.content || null),
+        fileUrl: imgData || null,
+        fileName: proof.fileName || null,
+        fileSize: proof.fileSize ? parseInt(proof.fileSize) : null,
+        mimeType: proof.mimeType || (isImg ? 'image/png' : null),
       });
     }
   }
 
-  // File proofs from multer
+  // 2. File proofs from multipart/form-data upload
   for (const file of files) {
     const isImage = file.mimetype.startsWith('image/');
     let fileUrl = `/uploads/proofs/${file.filename}`;

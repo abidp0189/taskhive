@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   X
 } from 'lucide-react';
+import { ImageLightboxModal } from '../../components/common/ImageLightboxModal';
 import api, { getFileUrl } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -35,6 +36,7 @@ export const JobDetailsPage = () => {
   const [urlProof, setUrlProof] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   const fetchJobDetails = async () => {
     try {
@@ -108,8 +110,6 @@ export const JobDetailsPage = () => {
 
     setSubmitting(true);
     try {
-      const formData = new FormData();
-      
       const proofs = [];
       if (textProof.trim()) {
         proofs.push({ type: 'TEXT', content: textProof.trim() });
@@ -118,21 +118,33 @@ export const JobDetailsPage = () => {
         proofs.push({ type: 'URL', content: urlProof.trim() });
       }
 
-      proofs.forEach((p, idx) => {
-        formData.append(`proofs[${idx}][type]`, p.type);
-        formData.append(`proofs[${idx}][content]`, p.content);
-      });
+      // Convert all selected files directly to Base64 in the browser
+      for (const file of selectedFiles) {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
-      selectedFiles.forEach((file) => {
-        formData.append('files', file);
-      });
+        proofs.push({
+          type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE',
+          content: base64,
+          fileUrl: base64,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type || 'image/png',
+        });
+      }
 
-      const res = await api.post(`/tasks/${task.id}/submit`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await api.post(`/tasks/${task.id}/submit`, { proofs });
 
       if (res.data?.success) {
         toast.success('Proof submitted successfully! Awaiting review.');
+        setSelectedFiles([]);
+        setFilePreviews([]);
+        setTextProof('');
+        setUrlProof('');
         fetchJobDetails();
       }
     } catch (err) {
@@ -397,11 +409,10 @@ export const JobDetailsPage = () => {
                         {p.content && !imageUrl && <p className="text-gray-300 select-all whitespace-pre-wrap">{p.content}</p>}
                         {imageUrl && (
                           <div className="mt-2 space-y-2">
-                            <a
-                              href={getFileUrl(imageUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block group"
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              className="block w-full text-left group cursor-zoom-in"
                             >
                               <img
                                 src={getFileUrl(imageUrl)}
@@ -409,15 +420,14 @@ export const JobDetailsPage = () => {
                                 className="max-h-48 w-full object-contain rounded-lg border border-gray-800 bg-black/60 group-hover:border-indigo-500 transition-colors"
                                 loading="lazy"
                               />
-                            </a>
-                            <a
-                              href={getFileUrl(imageUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
                               className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
                             >
-                              Open / View Original Screenshot <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                              View Fullscreen Screenshot <ExternalLink className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         )}
                         {isUrl && (
@@ -441,6 +451,14 @@ export const JobDetailsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Fullscreen Image Lightbox Modal */}
+      <ImageLightboxModal
+        isOpen={!!lightboxImg}
+        onClose={() => setLightboxImg(null)}
+        src={lightboxImg}
+        title="Submitted Screenshot Evidence"
+      />
     </div>
   );
 };

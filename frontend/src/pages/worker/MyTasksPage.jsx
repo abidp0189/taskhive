@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { Clock, CheckCircle2, AlertCircle, ArrowRight, Eye, Briefcase, RefreshCw, ExternalLink } from 'lucide-react';
+import { ImageLightboxModal } from '../../components/common/ImageLightboxModal';
 import api, { getFileUrl } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -11,6 +12,7 @@ export const MyTasksPage = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -190,11 +192,10 @@ export const MyTasksPage = () => {
                         )}
                         {imageUrl && (
                           <div className="mt-2 space-y-2">
-                            <a
-                              href={getFileUrl(imageUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block group"
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              className="block w-full text-left group cursor-zoom-in"
                             >
                               <img
                                 src={getFileUrl(imageUrl)}
@@ -202,15 +203,14 @@ export const MyTasksPage = () => {
                                 className="max-h-60 w-full object-contain rounded-lg border border-gray-800 bg-black/60 group-hover:border-indigo-500 transition-colors"
                                 loading="lazy"
                               />
-                            </a>
-                            <a
-                              href={getFileUrl(imageUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
                               className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
                             >
-                              Open / View Original Screenshot <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                              View Fullscreen Screenshot <ExternalLink className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         )}
                         {isUrl && (
@@ -234,6 +234,14 @@ export const MyTasksPage = () => {
           </div>
         )}
       </Modal>
+
+      {/* Fullscreen Image Lightbox Modal */}
+      <ImageLightboxModal
+        isOpen={!!lightboxImg}
+        onClose={() => setLightboxImg(null)}
+        src={lightboxImg}
+        title="Submitted Screenshot Evidence"
+      />
     </div>
   );
 };

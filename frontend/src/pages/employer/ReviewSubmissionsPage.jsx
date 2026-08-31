@@ -13,6 +13,7 @@ import {
   ShieldCheck, 
   ExternalLink 
 } from 'lucide-react';
+import { ImageLightboxModal } from '../../components/common/ImageLightboxModal';
 import api, { getFileUrl } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -28,6 +29,7 @@ export const ReviewSubmissionsPage = () => {
   const [actionType, setActionType] = useState(null); // 'reject' | 'resubmit'
   const [reason, setReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -236,36 +238,57 @@ export const ReviewSubmissionsPage = () => {
                 <p className="text-gray-500 py-4 text-center">No proofs found</p>
               ) : (
                 <div className="space-y-4">
-                  {selectedSub.proofs?.map((p) => (
-                    <div key={p.id} className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-2">
-                      <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">
-                        Evidence Type: {p.type}
-                      </span>
-                      {p.content && (
-                        <p className="text-gray-200 bg-gray-900/80 p-3 rounded-xl border border-gray-800 text-xs select-all whitespace-pre-wrap">
-                          {p.content}
-                        </p>
-                      )}
-                      {p.fileUrl && (
-                        <div className="mt-2 space-y-2">
-                          <img
-                            src={getFileUrl(p.fileUrl)}
-                            alt="Screenshot Proof"
-                            className="max-h-80 w-full object-contain rounded-xl border border-gray-800 bg-black"
-                            loading="lazy"
-                          />
-                          <a
-                            href={getFileUrl(p.fileUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1 font-semibold"
-                          >
-                            Open Original Screenshot <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {selectedSub.proofs?.map((p) => {
+                    const imageUrl = p.fileUrl || (p.type === 'IMAGE' && p.content ? p.content : null);
+                    const isUrl = p.type === 'URL' || (p.content && (p.content.startsWith('http://') || p.content.startsWith('https://')));
+                    return (
+                      <div key={p.id} className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-2">
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">
+                          Evidence Type: {p.type}
+                        </span>
+                        {p.content && !imageUrl && (
+                          <p className="text-gray-200 bg-gray-900/80 p-3 rounded-xl border border-gray-800 text-xs select-all whitespace-pre-wrap">
+                            {p.content}
+                          </p>
+                        )}
+                        {imageUrl && (
+                          <div className="mt-2 space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              className="block w-full text-left group cursor-zoom-in"
+                            >
+                              <img
+                                src={getFileUrl(imageUrl)}
+                                alt="Screenshot Proof"
+                                className="max-h-80 w-full object-contain rounded-xl border border-gray-800 bg-black group-hover:border-indigo-500 transition-colors"
+                                loading="lazy"
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
+                            >
+                              View Fullscreen Screenshot <ExternalLink className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                        {isUrl && (
+                          <div className="mt-1">
+                            <a
+                              href={p.content.startsWith('http') ? p.content : `https://${p.content}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
+                            >
+                              Open Submitted Link <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -339,6 +362,14 @@ export const ReviewSubmissionsPage = () => {
           </div>
         )}
       </Modal>
+
+      {/* Fullscreen Image Lightbox Modal */}
+      <ImageLightboxModal
+        isOpen={!!lightboxImg}
+        onClose={() => setLightboxImg(null)}
+        src={lightboxImg}
+        title="Worker Submission Screenshot"
+      />
     </div>
   );
 };
