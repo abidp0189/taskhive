@@ -385,25 +385,56 @@ export const JobDetailsPage = () => {
             </div>
 
             {task.proofs && task.proofs.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h4 className="text-xs font-bold text-gray-300">Your Submitted Evidence:</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {task.proofs.map((p) => (
-                    <div key={p.id} className="p-3 rounded-xl bg-gray-950/80 border border-gray-800 text-xs">
-                      <span className="text-[10px] font-bold text-indigo-400 uppercase">{p.type}</span>
-                      {p.content && <p className="text-gray-300 mt-1">{p.content}</p>}
-                      {p.fileUrl && (
-                        <a
-                          href={getFileUrl(p.fileUrl)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-indigo-400 hover:underline block mt-1"
-                        >
-                          View uploaded file
-                        </a>
-                      )}
-                    </div>
-                  ))}
+                  {task.proofs.map((p) => {
+                    const imageUrl = p.fileUrl || (p.type === 'IMAGE' && p.content ? p.content : null);
+                    const isUrl = p.type === 'URL' || (p.content && (p.content.startsWith('http://') || p.content.startsWith('https://')));
+                    return (
+                      <div key={p.id} className="p-3.5 rounded-xl bg-gray-950/80 border border-gray-800 text-xs space-y-2">
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">{p.type}</span>
+                        {p.content && !imageUrl && <p className="text-gray-300 select-all whitespace-pre-wrap">{p.content}</p>}
+                        {imageUrl && (
+                          <div className="mt-2 space-y-2">
+                            <a
+                              href={getFileUrl(imageUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block group"
+                            >
+                              <img
+                                src={getFileUrl(imageUrl)}
+                                alt="Uploaded proof"
+                                className="max-h-48 w-full object-contain rounded-lg border border-gray-800 bg-black/60 group-hover:border-indigo-500 transition-colors"
+                                loading="lazy"
+                              />
+                            </a>
+                            <a
+                              href={getFileUrl(imageUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
+                            >
+                              Open / View Original Screenshot <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                        {isUrl && (
+                          <div className="mt-1">
+                            <a
+                              href={p.content.startsWith('http') ? p.content : `https://${p.content}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
+                            >
+                              Open Submitted Link <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

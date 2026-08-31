@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
-import { Clock, CheckCircle2, AlertCircle, ArrowRight, Eye, Briefcase, RefreshCw } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, ArrowRight, Eye, Briefcase, RefreshCw, ExternalLink } from 'lucide-react';
 import api, { getFileUrl } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -179,22 +179,55 @@ export const MyTasksPage = () => {
                 <p className="text-gray-500 py-4 text-center">No proofs uploaded yet.</p>
               ) : (
                 <div className="space-y-3">
-                  {selectedTask.proofs?.map((p) => (
-                    <div key={p.id} className="p-3 rounded-xl bg-gray-950 border border-gray-800 space-y-1">
-                      <span className="text-[10px] font-bold text-indigo-400 uppercase">{p.type}</span>
-                      {p.content && <p className="text-gray-200">{p.content}</p>}
-                      {p.fileUrl && (
-                        <div className="mt-2">
-                          <img
-                            src={getFileUrl(p.fileUrl)}
-                            alt="Submitted screenshot"
-                            className="max-h-48 rounded-lg object-contain border border-gray-800 bg-black/40"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {selectedTask.proofs?.map((p) => {
+                    const imageUrl = p.fileUrl || (p.type === 'IMAGE' && p.content ? p.content : null);
+                    const isUrl = p.type === 'URL' || (p.content && (p.content.startsWith('http://') || p.content.startsWith('https://')));
+                    return (
+                      <div key={p.id} className="p-3.5 rounded-xl bg-gray-950 border border-gray-800 space-y-2">
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">{p.type}</span>
+                        {p.content && !imageUrl && (
+                          <p className="text-gray-200 text-xs select-all whitespace-pre-wrap">{p.content}</p>
+                        )}
+                        {imageUrl && (
+                          <div className="mt-2 space-y-2">
+                            <a
+                              href={getFileUrl(imageUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block group"
+                            >
+                              <img
+                                src={getFileUrl(imageUrl)}
+                                alt="Submitted screenshot"
+                                className="max-h-60 w-full object-contain rounded-lg border border-gray-800 bg-black/60 group-hover:border-indigo-500 transition-colors"
+                                loading="lazy"
+                              />
+                            </a>
+                            <a
+                              href={getFileUrl(imageUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
+                            >
+                              Open / View Original Screenshot <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                        {isUrl && (
+                          <div className="mt-1">
+                            <a
+                              href={p.content.startsWith('http') ? p.content : `https://${p.content}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
+                            >
+                              Open Submitted Link <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
