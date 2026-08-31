@@ -58,4 +58,17 @@ api.interceptors.response.use(
   }
 );
 
+export const getFileUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url;
+  }
+  const apiBase = import.meta.env.VITE_API_URL || '';
+  if (apiBase.startsWith('http')) {
+    const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+    return `${backendOrigin}${url.startsWith('/') ? '' : '/'}${url}`;
+  }
+  return url;
+};
+
 export default api;

@@ -16,7 +16,7 @@ import {
   ArrowLeft,
   X
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import toast from 'react-hot-toast';
 
 export const JobDetailsPage = () => {
@@ -394,7 +394,7 @@ export const JobDetailsPage = () => {
                       {p.content && <p className="text-gray-300 mt-1">{p.content}</p>}
                       {p.fileUrl && (
                         <a
-                          href={p.fileUrl}
+                          href={getFileUrl(p.fileUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-indigo-400 hover:underline block mt-1"

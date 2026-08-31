@@ -13,7 +13,7 @@ import {
   ShieldCheck, 
   ExternalLink 
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import toast from 'react-hot-toast';
 
 export const ReviewSubmissionsPage = () => {
@@ -249,12 +249,13 @@ export const ReviewSubmissionsPage = () => {
                       {p.fileUrl && (
                         <div className="mt-2 space-y-2">
                           <img
-                            src={p.fileUrl}
+                            src={getFileUrl(p.fileUrl)}
                             alt="Screenshot Proof"
                             className="max-h-80 w-full object-contain rounded-xl border border-gray-800 bg-black"
+                            loading="lazy"
                           />
                           <a
-                            href={p.fileUrl}
+                            href={getFileUrl(p.fileUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1 font-semibold"

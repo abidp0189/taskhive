@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { Clock, CheckCircle2, AlertCircle, ArrowRight, Eye, Briefcase, RefreshCw } from 'lucide-react';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import toast from 'react-hot-toast';
 
 export const MyTasksPage = () => {
@@ -186,9 +186,10 @@ export const MyTasksPage = () => {
                       {p.fileUrl && (
                         <div className="mt-2">
                           <img
-                            src={p.fileUrl}
+                            src={getFileUrl(p.fileUrl)}
                             alt="Submitted screenshot"
                             className="max-h-48 rounded-lg object-contain border border-gray-800 bg-black/40"
+                            loading="lazy"
                           />
                         </div>
                       )}
