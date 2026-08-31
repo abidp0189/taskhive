@@ -5,7 +5,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { NotificationDropdown } from './NotificationDropdown';
 import { Badge } from './Badge';
 import { 
-  Zap, 
   Wallet as WalletIcon, 
   User, 
   LogOut, 
@@ -42,14 +41,21 @@ export const Navbar = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7c3aed] to-[#a78bfa] shadow-md shadow-[#7c3aed]/30 text-white group-hover:scale-105 transition-transform">
-                <Zap className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-extrabold tracking-tight text-[var(--color-text)]">
-                Task<span className="gradient-text font-black">Hive</span>
-              </span>
-            </Link>
+            {(() => {
+              const homePath = !user ? '/' : user.role === 'WORKER' ? '/jobs' : user.role === 'EMPLOYER' ? '/employer/dashboard' : '/admin';
+              return (
+                <Link to={homePath} className="flex items-center gap-2 group">
+                  <img
+                    src="/tomar-kaj-logo.png"
+                    alt="Tomar Kaj"
+                    className="h-9 w-9 object-contain group-hover:scale-105 transition-transform"
+                  />
+                  <span className="text-xl font-extrabold tracking-tight text-[var(--color-text)]">
+                    Tomar <span className="gradient-text font-black">Kaj</span>
+                  </span>
+                </Link>
+              );
+            })()}
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-1">

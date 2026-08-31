@@ -31,15 +31,19 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 app.use(cors({
   origin: (origin, callback) => {
-    // In dev, allow all local origins (5173, 5174, etc.)
+    // Allow non-browser requests or local development origins
     if (!origin || isDev || origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
-    const allowed = [process.env.FRONTEND_URL, 'https://microjob.vercel.app'];
-    if (allowed.includes(origin)) {
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'https://amader-kaj.vercel.app',
+      'https://microjob.vercel.app'
+    ].filter(Boolean);
+    if (allowed.includes(origin) || allowed.some(a => origin.endsWith('.vercel.app'))) {
       return callback(null, true);
     }
-    callback(null, true); // Permissive for testing
+    callback(new Error('CORS not allowed for this origin'), false);
   },
   credentials: true,
 }));

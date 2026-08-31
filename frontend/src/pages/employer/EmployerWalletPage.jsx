@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { PaymentMethodBadge } from '../../components/common/PaymentLogos';
 
 export const EmployerWalletPage = () => {
   const { wallet, refreshWallet } = useAuth();
@@ -28,13 +29,20 @@ export const EmployerWalletPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
+  const [config, setConfig] = useState({ min_deposit_amount: 1.00 });
 
   const fetchPaymentMethods = async () => {
     try {
-      const res = await api.get('/wallet/payment-methods');
-      if (res.data?.success && res.data.data.length > 0) {
-        setPaymentMethods(res.data.data);
-        setSelectedMethodId(res.data.data[0].id);
+      const [methodsRes, configRes] = await Promise.all([
+        api.get('/wallet/payment-methods'),
+        api.get('/wallet/config'),
+      ]);
+      if (methodsRes.data?.success && methodsRes.data.data.length > 0) {
+        setPaymentMethods(methodsRes.data.data);
+        setSelectedMethodId(methodsRes.data.data[0].id);
+      }
+      if (configRes.data?.success) {
+        setConfig(configRes.data.data);
       }
     } catch (e) {
       console.error('Failed to load payment methods', e);
@@ -69,8 +77,9 @@ export const EmployerWalletPage = () => {
   const handleDeposit = async (e) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount < 1.0) {
-      toast.error('Minimum deposit amount is $1.00');
+    const minDeposit = parseFloat(config.min_deposit_amount || 1.00);
+    if (!numAmount || numAmount < minDeposit) {
+      toast.error(`Minimum deposit amount is $${minDeposit.toFixed(2)} (৳${(minDeposit * 100).toFixed(0)} BDT)`);
       return;
     }
 
@@ -168,8 +177,8 @@ export const EmployerWalletPage = () => {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{m.type === 'BKASH' ? '📱' : '📲'}</span>
+                        <div className="flex items-center gap-3">
+                          <PaymentMethodBadge method={m} className="h-8 w-8" />
                           <div>
                             <p className="text-xs font-bold text-white">{m.name}</p>
                             {m.accountName && <p className="text-[10px] text-gray-400">{m.accountName}</p>}
@@ -228,13 +237,25 @@ export const EmployerWalletPage = () => {
                   <input
                     type="number"
                     step="0.01"
-                    min="1"
+                    min={config.min_deposit_amount || 1}
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="10.00"
                     className="w-full rounded-xl bg-gray-950/80 border border-gray-800 pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                     required
                   />
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-[10px] text-gray-500">
+                    Minimum: ${parseFloat(config.min_deposit_amount || 1).toFixed(2)} USD
+                    <span className="text-amber-400 ml-1">(৳{(parseFloat(config.min_deposit_amount || 1) * 100).toFixed(0)} BDT)</span>
+                  </span>
+                  {parseFloat(amount) > 0 && (
+                    <span className="text-[11px] font-semibold text-amber-400">
+                      ≈ ৳{(parseFloat(amount) * 100).toFixed(0)} BDT
+                      <span className="text-[9px] text-gray-500 font-normal ml-1">(1$ = ৳100)</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -327,7 +348,12 @@ export const EmployerWalletPage = () => {
                   const isRejected = d.status === 'FAILED';
                   return (
                     <tr key={d.id} className="hover:bg-gray-850/50 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-white">{d.paymentMethod}</td>
+                      <td className="py-3.5 px-4 font-semibold text-white">
+                        <div className="flex items-center gap-2">
+                          <PaymentMethodBadge method={d.paymentMethod} className="h-5 w-5" />
+                          <span>{d.paymentMethod}</span>
+                        </div>
+                      </td>
                       <td className="py-3.5 px-4 font-bold text-emerald-400">${parseFloat(d.amount).toFixed(2)}</td>
                       <td className="py-3.5 px-4 text-gray-300 font-mono">
                         {d.providerReference || 'N/A'}

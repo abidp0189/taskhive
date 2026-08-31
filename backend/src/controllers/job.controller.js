@@ -123,10 +123,10 @@ const getJob = asyncHandler(async (req, res) => {
 
   if (!job) return notFound(res, 'Job not found');
 
-  // Don't expose full instructions to non-authenticated users or on certain statuses
+  // Don't expose full instructions to non-authenticated users or employers
   let jobData = { ...job };
 
-  if (!req.user) {
+  if (!req.user || req.user.role === 'EMPLOYER') {
     delete jobData.instructions;
     delete jobData.proofRequirements;
   }

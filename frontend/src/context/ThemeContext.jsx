@@ -8,9 +8,9 @@ const ThemeContext = createContext({
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
-    const saved = localStorage.getItem('taskhive_theme');
+    const saved = localStorage.getItem('tomarkaj_theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    return 'light'; // Default to clean light theme from portfolio reference
+    return 'dark'; // Default to sleek modern dark theme
   });
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export const ThemeProvider = ({ children }) => {
       root.classList.remove('dark');
       root.setAttribute('data-theme', 'light');
     }
-    localStorage.setItem('taskhive_theme', theme);
+    localStorage.setItem('tomarkaj_theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {

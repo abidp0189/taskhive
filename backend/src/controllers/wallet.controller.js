@@ -74,6 +74,7 @@ const getWalletConfig = asyncHandler(async (req, res) => {
           'platform_fee_percent',
           'screenshot_fee_percent',
           'min_withdrawal_amount',
+          'min_deposit_amount',
           'withdrawal_fee_percent',
           'min_job_budget',
           'boost_1m_price',
@@ -90,6 +91,7 @@ const getWalletConfig = asyncHandler(async (req, res) => {
     platform_fee_percent: 10,
     screenshot_fee_percent: 3,
     min_withdrawal_amount: 1.00,
+    min_deposit_amount: 1.00,
     withdrawal_fee_percent: 6,
     min_job_budget: 0.80,
     boost_1m_price: 0.04,
@@ -231,6 +233,13 @@ const requestDeposit = asyncHandler(async (req, res) => {
   const numAmount = parseFloat(amount);
   if (isNaN(numAmount) || numAmount <= 0) {
     return badRequest(res, 'Invalid deposit amount');
+  }
+
+  // Validate minimum deposit
+  const minDepositSetting = await prisma.platformSetting.findUnique({ where: { key: 'min_deposit_amount' } });
+  const minDeposit = parseFloat(minDepositSetting?.value || '1.00');
+  if (numAmount < minDeposit) {
+    return badRequest(res, `Minimum deposit amount is $${minDeposit.toFixed(2)} (৳${(minDeposit * 100).toFixed(0)} BDT)`);
   }
 
   // Validate payment method if ID is provided

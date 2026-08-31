@@ -57,8 +57,13 @@ export const JobDetailsPage = () => {
   };
 
   useEffect(() => {
+    if (user?.role === 'EMPLOYER') {
+      toast.error('Employers cannot view full job details or complete tasks.');
+      navigate('/employer/dashboard', { replace: true });
+      return;
+    }
     fetchJobDetails();
-  }, [id]);
+  }, [id, user]);
 
   const handleStartTask = async () => {
     if (!user) {

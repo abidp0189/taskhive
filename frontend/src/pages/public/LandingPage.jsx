@@ -115,7 +115,7 @@ export const LandingPage = () => {
       <section className="py-20 bg-[var(--color-surface2)]/40 border-y border-[var(--color-border)] transition-colors duration-300">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold text-[var(--color-text)] tracking-tight font-heading">How TaskHive Operates</h2>
+            <h2 className="text-3xl font-bold text-[var(--color-text)] tracking-tight font-heading">How Tomar Kaj Operates</h2>
             <p className="mt-3 text-sm text-[var(--color-text-secondary)]">Choose your journey below to see the frictionless lifecycle.</p>
 
             {/* Toggle */}

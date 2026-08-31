@@ -49,7 +49,7 @@ export const LoginPage = () => {
       } else if (result.user.role === 'EMPLOYER') {
         navigate('/employer/dashboard', { replace: true });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate('/jobs', { replace: true });
       }
     } else {
       setLoginError(result.message || 'Invalid email or password');
@@ -66,7 +66,7 @@ export const LoginPage = () => {
             </div>
           </Link>
           <h2 className="text-3xl font-extrabold text-[var(--color-text)] tracking-tight font-heading uppercase">
-            Sign In to Task<span className="gradient-text font-black">Hive</span>
+            Sign In to Tomar <span className="gradient-text font-black">Kaj</span>
           </h2>
           <p className="mt-1 text-xs text-[var(--color-text-secondary)] font-medium">
             Select your account type to access the platform.

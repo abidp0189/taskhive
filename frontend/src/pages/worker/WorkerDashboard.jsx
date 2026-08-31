@@ -219,7 +219,7 @@ export const WorkerDashboard = () => {
               <Users className="h-4 w-4 text-indigo-400" /> Earn 5% Commission
             </h3>
             <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-              Invite friends to work on TaskHive. You earn a 5% commission on all their approved tasks forever.
+              Invite friends to work on Tomar Kaj. You earn a 5% commission on all their approved tasks forever.
             </p>
             <Link
               to="/referral"

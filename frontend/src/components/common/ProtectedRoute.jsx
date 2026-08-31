@@ -10,7 +10,7 @@ export const ProtectedRoute = ({ allowedRoles = [] }) => {
       <div className="flex h-screen w-full items-center justify-center bg-gray-950">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-          <p className="text-sm font-medium text-gray-400">Loading TaskHive...</p>
+          <p className="text-sm font-medium text-gray-400">Loading Tomar Kaj...</p>
         </div>
       </div>
     );

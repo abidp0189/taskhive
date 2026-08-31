@@ -20,9 +20,9 @@ out/
 *.db-journal
 dev.db
 
-# Uploads
-uploads/proofs/*
-!uploads/proofs/.gitkeep
+# Uploads (keep folder structure, ignore actual files)
+backend/uploads/**
+!backend/uploads/**/.gitkeep
 
 # Logs
 npm-debug.log*

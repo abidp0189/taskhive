@@ -12,6 +12,7 @@ async function main() {
     { key: 'platform_fee_percent',              value: '10',    type: 'number', label: 'Platform Fee (%)',                       group: 'financial' },
     { key: 'screenshot_fee_percent',            value: '3',     type: 'number', label: 'Screenshot/Proof Fee (%)',               group: 'financial' },
     { key: 'min_withdrawal_amount',             value: '1.00',  type: 'number', label: 'Minimum Withdrawal ($)',                 group: 'financial' },
+    { key: 'min_deposit_amount',                value: '1.00',  type: 'number', label: 'Minimum Deposit ($)',                    group: 'financial' },
     { key: 'withdrawal_fee_percent',            value: '6',     type: 'number', label: 'Worker Withdrawal Fee (%)',              group: 'financial' },
     { key: 'min_job_reward',                    value: '0.01',  type: 'number', label: 'Minimum Job Reward ($)',                 group: 'financial' },
     { key: 'min_job_budget',                    value: '0.80',  type: 'number', label: 'Minimum Job Budget ($)',                 group: 'financial' },
@@ -30,8 +31,8 @@ async function main() {
     { key: 'max_resubmissions',                 value: '3',     type: 'number', label: 'Max Resubmissions',                     group: 'tasks' },
     { key: 'default_estimated_days',            value: '3',     type: 'number', label: 'Default Estimated Completion Days',     group: 'tasks' },
     // General
-    { key: 'site_name',                         value: 'TaskHive', type: 'string', label: 'Site Name',                         group: 'general' },
-    { key: 'site_description',                  value: 'Earn money completing micro tasks online', type: 'string', label: 'Site Description', group: 'general' },
+    { key: 'site_name',                         value: 'Tomar Kaj', type: 'string', label: 'Site Name',                         group: 'general' },
+    { key: 'site_description',                  value: 'Earn money completing micro tasks online with Tomar Kaj', type: 'string', label: 'Site Description', group: 'general' },
   ];
 
   for (const setting of settings) {
@@ -45,14 +46,16 @@ async function main() {
 
   // ─── Admin Payment Methods ─────────────────────
   const paymentMethods = [
-    { name: 'bKash Personal',  type: 'BKASH', number: '01700000000', accountName: 'TaskHive BD', sortOrder: 1 },
-    { name: 'Nagad Personal',  type: 'NAGAD', number: '01800000000', accountName: 'TaskHive BD', sortOrder: 2 },
+    { name: 'bKash Personal',  type: 'BKASH', number: '01700000000', accountName: 'Tomar Kaj Official', sortOrder: 1 },
+    { name: 'Nagad Personal',  type: 'NAGAD', number: '01800000000', accountName: 'Tomar Kaj Official', sortOrder: 2 },
   ];
 
   for (const pm of paymentMethods) {
     const existing = await prisma.paymentMethod.findFirst({ where: { type: pm.type, number: pm.number } });
     if (!existing) {
       await prisma.paymentMethod.create({ data: pm });
+    } else {
+      await prisma.paymentMethod.update({ where: { id: existing.id }, data: { accountName: pm.accountName } });
     }
   }
   console.log('✅ Payment methods seeded');
@@ -255,11 +258,11 @@ async function main() {
   const passwordHash = await bcrypt.hash('password123', 12);
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@taskhive.com' },
+    where: { email: 'admin@tomarkaj.com' },
     update: {},
     create: {
       name: 'Admin',
-      email: 'admin@taskhive.com',
+      email: 'admin@tomarkaj.com',
       passwordHash,
       role: 'ADMIN',
       status: 'ACTIVE',
@@ -271,6 +274,26 @@ async function main() {
     where: { userId: admin.id },
     update: {},
     create: { userId: admin.id },
+  });
+
+  // Also maintain backwards compatibility for admin@taskhive.com
+  const legacyAdmin = await prisma.user.upsert({
+    where: { email: 'admin@taskhive.com' },
+    update: {},
+    create: {
+      name: 'Admin',
+      email: 'admin@taskhive.com',
+      passwordHash,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      referralCode: 'ADMINREF2',
+      emailVerifiedAt: new Date(),
+    },
+  });
+  await prisma.wallet.upsert({
+    where: { userId: legacyAdmin.id },
+    update: {},
+    create: { userId: legacyAdmin.id },
   });
 
   console.log('✅ Admin account seeded');

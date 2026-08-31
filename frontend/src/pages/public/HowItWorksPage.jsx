@@ -7,7 +7,7 @@ export const HowItWorksPage = () => {
     <div className="py-16 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="text-center max-w-3xl mx-auto mb-16">
         <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-          How TaskHive Works
+          How Tomar Kaj Works
         </h1>
         <p className="mt-4 text-sm sm:text-base text-gray-400">
           A transparent, fraud-protected microtask marketplace connecting workers with reputable employers.
@@ -108,7 +108,7 @@ export const HowItWorksPage = () => {
           to="/register"
           className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 text-xs font-bold text-white shadow hover:from-indigo-500 hover:to-purple-500 transition-all whitespace-nowrap"
         >
-          Join TaskHive Today
+          Join Tomar Kaj Today
         </Link>
       </div>
     </div>

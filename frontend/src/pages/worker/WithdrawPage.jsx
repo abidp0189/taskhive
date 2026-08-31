@@ -4,6 +4,7 @@ import { Badge } from '../../components/common/Badge';
 import { ArrowUpRight, DollarSign, ShieldCheck, AlertCircle, CheckCircle2, Wallet, CreditCard } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { PaymentMethodBadge } from '../../components/common/PaymentLogos';
 
 const DEFAULT_METHODS = [
   { id: 'bKash Personal', name: 'bKash Personal', type: 'BKASH', icon: '📱' },
@@ -142,7 +143,7 @@ export const WithdrawPage = () => {
                       : 'border-gray-800 bg-gray-950/60 text-gray-400 hover:border-gray-700 hover:text-white'
                   }`}
                 >
-                  <span className="text-2xl">{m.icon}</span>
+                  <PaymentMethodBadge method={m} className="h-8 w-8" />
                   <div>
                     <p className="text-xs font-bold text-white">{m.name}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">
@@ -172,6 +173,15 @@ export const WithdrawPage = () => {
                     className="w-full rounded-xl bg-gray-950/80 border border-gray-800 pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none"
                     required
                   />
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-[10px] text-gray-500">Minimum: ${minWithdrawal.toFixed(2)} USD</span>
+                  {numAmount > 0 && (
+                    <span className="text-[11px] font-semibold text-amber-400">
+                      ≈ ৳{(numAmount * 100).toFixed(0)} BDT
+                      <span className="text-[9px] text-gray-500 font-normal ml-1">(1$ = ৳100)</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -209,7 +219,10 @@ export const WithdrawPage = () => {
             <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-2 text-xs">
               <div className="flex justify-between text-gray-400">
                 <span>Requested Amount</span>
-                <span className="font-semibold text-white">${numAmount.toFixed(2)}</span>
+                <div className="text-right">
+                  <span className="font-semibold text-white">${numAmount.toFixed(2)}</span>
+                  {numAmount > 0 && <span className="text-[10px] text-amber-400 ml-1.5">≈ ৳{(numAmount * 100).toFixed(0)}</span>}
+                </div>
               </div>
               <div className="flex justify-between text-gray-400">
                 <span>Platform Withdrawal Fee ({config.withdrawal_fee_percent}%)</span>
@@ -217,7 +230,10 @@ export const WithdrawPage = () => {
               </div>
               <div className="flex justify-between text-white font-bold pt-2 border-t border-gray-800/80">
                 <span>Net Payout You Receive</span>
-                <span className="text-emerald-400 text-sm font-black">${net.toFixed(2)}</span>
+                <div className="text-right">
+                  <span className="text-emerald-400 text-sm font-black">${net.toFixed(2)}</span>
+                  {net > 0 && <span className="block text-[10px] text-amber-400 font-normal">≈ ৳{(net * 100).toFixed(0)} BDT</span>}
+                </div>
               </div>
             </div>
 
@@ -278,7 +294,12 @@ export const WithdrawPage = () => {
               <tbody className="divide-y divide-gray-800/60">
                 {withdrawals.map((w) => (
                   <tr key={w.id} className="hover:bg-gray-850/50 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-white">{w.method}</td>
+                    <td className="py-3.5 px-4 font-semibold text-white">
+                      <div className="flex items-center gap-2">
+                        <PaymentMethodBadge method={w.method} className="h-5 w-5" />
+                        <span>{w.method}</span>
+                      </div>
+                    </td>
                     <td className="py-3.5 px-4 text-gray-300">${parseFloat(w.amount).toFixed(2)}</td>
                     <td className="py-3.5 px-4 text-rose-400">-${parseFloat(w.fee).toFixed(2)}</td>
                     <td className="py-3.5 px-4 font-bold text-emerald-400">${parseFloat(w.netAmount).toFixed(2)}</td>

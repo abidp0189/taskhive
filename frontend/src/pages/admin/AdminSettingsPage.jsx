@@ -10,6 +10,7 @@ export const AdminSettingsPage = () => {
     withdrawal_fee_percent: '6',
     min_job_budget: '0.80',
     min_withdrawal_amount: '1.00',
+    min_deposit_amount: '1.00',
     default_estimated_days: '3',
     boost_1m_price: '0.04',
     boost_5m_price: '0.07',
@@ -19,7 +20,7 @@ export const AdminSettingsPage = () => {
     referral_deposit_commission_percent: '5',
     task_expiry_hours: '48',
     max_resubmissions: '3',
-    site_name: 'TaskHive',
+    site_name: 'Tomar Kaj',
   });
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +200,18 @@ export const AdminSettingsPage = () => {
               className="w-full rounded-xl bg-gray-950 border border-gray-800 p-2.5 text-white focus:outline-none focus:border-indigo-500"
             />
             <span className="text-[10px] text-gray-500">Default: $1.00</span>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-gray-300 mb-1.5">Minimum Deposit ($ USD)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={settings.min_deposit_amount}
+              onChange={(e) => handleChange('min_deposit_amount', e.target.value)}
+              className="w-full rounded-xl bg-gray-950 border border-gray-800 p-2.5 text-white focus:outline-none focus:border-indigo-500"
+            />
+            <span className="text-[10px] text-gray-500">Default: $1.00 minimum deposit</span>
           </div>
 
           <div>
@@ -412,7 +425,7 @@ export const AdminSettingsPage = () => {
                   type="text"
                   value={newMethod.accountName}
                   onChange={(e) => setNewMethod({ ...newMethod, accountName: e.target.value })}
-                  placeholder="e.g. TaskHive Official"
+                  placeholder="e.g. Tomar Kaj Official"
                   className="w-full rounded-xl bg-gray-950 border border-gray-800 p-2.5 text-white focus:outline-none"
                 />
               </div>
