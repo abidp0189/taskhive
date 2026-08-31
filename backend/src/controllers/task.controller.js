@@ -2,6 +2,7 @@ const prisma = require('../utils/prisma');
 const { success, paginated, notFound, badRequest, error, forbidden } = require('../utils/response');
 const { asyncHandler } = require('../middleware/error.middleware');
 const path = require('path');
+const fs = require('fs');
 
 /**
  * GET /api/tasks - Worker's task list
@@ -115,10 +116,20 @@ const submitTask = asyncHandler(async (req, res) => {
   // File proofs from multer
   for (const file of files) {
     const isImage = file.mimetype.startsWith('image/');
+    let fileUrl = `/uploads/proofs/${file.filename}`;
+    try {
+      if (isImage && fs.existsSync(file.path)) {
+        const fileBuffer = fs.readFileSync(file.path);
+        fileUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+      }
+    } catch (e) {
+      console.error('Failed to encode image to base64, using fallback path', e);
+    }
+
     proofData.push({
       assignmentId: id,
       type: isImage ? 'IMAGE' : 'FILE',
-      fileUrl: `/uploads/proofs/${file.filename}`,
+      fileUrl,
       fileName: file.originalname,
       fileSize: file.size,
       mimeType: file.mimetype,
