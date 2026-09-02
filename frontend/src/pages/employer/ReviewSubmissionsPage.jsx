@@ -30,6 +30,26 @@ export const ReviewSubmissionsPage = () => {
   const [reason, setReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
+  const [signedUrlCache, setSignedUrlCache] = useState({});
+
+  const resolveProofUrl = async (rawUrl) => {
+    if (!rawUrl) return null;
+    if (rawUrl.startsWith('data:') || rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('blob:')) {
+      return rawUrl;
+    }
+    if (signedUrlCache[rawUrl]) return signedUrlCache[rawUrl];
+    try {
+      const res = await api.get(`/upload/signed-url?key=${encodeURIComponent(rawUrl)}`);
+      if (res.data?.success) {
+        const signedUrl = res.data.data.signedUrl;
+        setSignedUrlCache((prev) => ({ ...prev, [rawUrl]: signedUrl }));
+        return signedUrl;
+      }
+    } catch (e) {
+      console.warn('[R2] Failed to get signed URL for:', rawUrl, e.message);
+    }
+    return null;
+  };
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -255,19 +275,31 @@ export const ReviewSubmissionsPage = () => {
                           <div className="mt-2 space-y-2">
                             <button
                               type="button"
-                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              onClick={async () => {
+                                const url = await resolveProofUrl(imageUrl);
+                                if (url) setLightboxImg(url);
+                              }}
                               className="block w-full text-left group cursor-zoom-in"
                             >
                               <img
-                                src={getFileUrl(imageUrl)}
+                                src={imageUrl?.startsWith('data:') ? imageUrl : undefined}
+                                data-r2-key={!imageUrl?.startsWith('data:') ? imageUrl : undefined}
                                 alt="Screenshot Proof"
                                 className="max-h-80 w-full object-contain rounded-xl border border-gray-800 bg-black group-hover:border-indigo-500 transition-colors"
                                 loading="lazy"
+                                onError={(e) => {
+                                  if (e.target.dataset.r2Key) {
+                                    resolveProofUrl(e.target.dataset.r2Key).then((url) => { if (url) e.target.src = url; });
+                                  }
+                                }}
                               />
                             </button>
                             <button
                               type="button"
-                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              onClick={async () => {
+                                const url = await resolveProofUrl(imageUrl);
+                                if (url) setLightboxImg(url);
+                              }}
                               className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
                             >
                               View Fullscreen Screenshot <ExternalLink className="h-3.5 w-3.5" />

@@ -37,6 +37,33 @@ export const JobDetailsPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
   const [lightboxImg, setLightboxImg] = useState(null);
+  // Cache of resolved signed URLs for R2 object keys: { [objectKey]: signedUrl }
+  const [signedUrlCache, setSignedUrlCache] = useState({});
+
+  /**
+   * Resolve a proof image URL.
+   * - If it starts with 'data:' or 'http', use as-is.
+   * - Otherwise treat it as an R2 object key and fetch a signed GET URL.
+   */
+  const resolveProofUrl = async (rawUrl) => {
+    if (!rawUrl) return null;
+    if (rawUrl.startsWith('data:') || rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('blob:')) {
+      return rawUrl;
+    }
+    // R2 object key — check cache first
+    if (signedUrlCache[rawUrl]) return signedUrlCache[rawUrl];
+    try {
+      const res = await api.get(`/upload/signed-url?key=${encodeURIComponent(rawUrl)}`);
+      if (res.data?.success) {
+        const signedUrl = res.data.data.signedUrl;
+        setSignedUrlCache((prev) => ({ ...prev, [rawUrl]: signedUrl }));
+        return signedUrl;
+      }
+    } catch (e) {
+      console.warn('[R2] Failed to get signed URL for:', rawUrl, e.message);
+    }
+    return null;
+  };
 
   const fetchJobDetails = async () => {
     try {
@@ -118,23 +145,61 @@ export const JobDetailsPage = () => {
         proofs.push({ type: 'URL', content: urlProof.trim() });
       }
 
-      // Convert all selected files directly to Base64 in the browser
       for (const file of selectedFiles) {
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        let objectKey = null;
 
-        proofs.push({
-          type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE',
-          content: base64,
-          fileUrl: base64,
-          fileName: file.name,
-          fileSize: file.size,
-          mimeType: file.type || 'image/png',
-        });
+        // ── Try R2 presigned upload (production path) ──────────────────────
+        try {
+          const presignRes = await api.post('/upload/presign', {
+            filename: file.name,
+            contentType: file.type || 'image/png',
+            size: file.size,
+            taskId: task.id,
+          });
+
+          if (presignRes.data?.success) {
+            const { presignedUrl, objectKey: key } = presignRes.data.data;
+            // Direct PUT to R2 — file bytes never pass through our API server
+            await fetch(presignedUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': file.type || 'image/png' },
+              body: file,
+            });
+            objectKey = key;
+          }
+        } catch (r2Err) {
+          // R2 not configured (local dev) — fall back to base64
+          console.warn('[Upload] R2 not available, falling back to base64:', r2Err.message);
+        }
+
+        if (objectKey) {
+          // Production path: store only the R2 object key reference
+          proofs.push({
+            type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE',
+            content: objectKey,
+            fileUrl: objectKey,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || 'image/png',
+          });
+        } else {
+          // Dev fallback: base64 encode in browser
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          proofs.push({
+            type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE',
+            content: base64,
+            fileUrl: base64,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || 'image/png',
+          });
+        }
       }
 
       const res = await api.post(`/tasks/${task.id}/submit`, { proofs });
@@ -153,6 +218,7 @@ export const JobDetailsPage = () => {
       setSubmitting(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -411,19 +477,41 @@ export const JobDetailsPage = () => {
                           <div className="mt-2 space-y-2">
                             <button
                               type="button"
-                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              onClick={async () => {
+                                const url = await resolveProofUrl(imageUrl);
+                                if (url) setLightboxImg(url);
+                              }}
                               className="block w-full text-left group cursor-zoom-in"
                             >
                               <img
-                                src={getFileUrl(imageUrl)}
+                                src={imageUrl?.startsWith('data:') ? imageUrl : undefined}
+                                data-r2-key={!imageUrl?.startsWith('data:') ? imageUrl : undefined}
                                 alt="Uploaded proof"
                                 className="max-h-48 w-full object-contain rounded-lg border border-gray-800 bg-black/60 group-hover:border-indigo-500 transition-colors"
                                 loading="lazy"
+                                onLoad={(e) => {
+                                  // If src not yet set and we have an R2 key, resolve it
+                                  if (!e.target.src && e.target.dataset.r2Key) {
+                                    resolveProofUrl(e.target.dataset.r2Key).then((url) => {
+                                      if (url) e.target.src = url;
+                                    });
+                                  }
+                                }}
+                                onError={(e) => {
+                                  if (e.target.dataset.r2Key) {
+                                    resolveProofUrl(e.target.dataset.r2Key).then((url) => {
+                                      if (url) e.target.src = url;
+                                    });
+                                  }
+                                }}
                               />
                             </button>
                             <button
                               type="button"
-                              onClick={() => setLightboxImg(getFileUrl(imageUrl))}
+                              onClick={async () => {
+                                const url = await resolveProofUrl(imageUrl);
+                                if (url) setLightboxImg(url);
+                              }}
                               className="text-xs text-indigo-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
                             >
                               View Fullscreen Screenshot <ExternalLink className="h-3.5 w-3.5" />

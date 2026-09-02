@@ -29,21 +29,33 @@ app.use(helmet({
 // ─── CORS ────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== 'production';
 
+// Production CORS origins — never use wildcard in production
+const PRODUCTION_ORIGINS = [
+  'https://tomarkaj.com',
+  'https://www.tomarkaj.com',
+];
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser requests or local development origins
-    if (!origin || isDev || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    // Allow non-browser tool requests (curl, Render health checks, etc.)
+    if (!origin) return callback(null, true);
+
+    // Always allow localhost in development
+    if (isDev && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
       return callback(null, true);
     }
+
+    // Build the allow-list from env + production origins
     const allowed = [
+      ...PRODUCTION_ORIGINS,
       process.env.FRONTEND_URL,
-      'https://amader-kaj.vercel.app',
-      'https://microjob.vercel.app'
     ].filter(Boolean);
-    if (allowed.includes(origin) || allowed.some(a => origin.endsWith('.vercel.app'))) {
+
+    if (allowed.includes(origin)) {
       return callback(null, true);
     }
-    callback(new Error('CORS not allowed for this origin'), false);
+
+    callback(new Error(`CORS not allowed for origin: ${origin}`), false);
   },
   credentials: true,
 }));
@@ -65,8 +77,10 @@ const authLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 
 // ─── Body parsing ────────────────────────────────
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Large base64 payloads should not go through the API — files go directly to R2.
+// Keep a reasonable limit for normal JSON requests.
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cookieParser());
 
 // ─── Logging ─────────────────────────────────────
