@@ -29,7 +29,7 @@ app.use(helmet({
 // ─── CORS ────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== 'production';
 
-// Production CORS origins — never use wildcard in production
+// Production CORS origins
 const PRODUCTION_ORIGINS = [
   'https://tomarkaj.com',
   'https://www.tomarkaj.com',
@@ -40,8 +40,8 @@ app.use(cors({
     // Allow non-browser tool requests (curl, Render health checks, etc.)
     if (!origin) return callback(null, true);
 
-    // Always allow localhost in development
-    if (isDev && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    // Always allow localhost in development / local testing
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
 
@@ -51,7 +51,12 @@ app.use(cors({
       process.env.FRONTEND_URL,
     ].filter(Boolean);
 
-    if (allowed.includes(origin)) {
+    // Allow configured origins, any *.vercel.app deployment, or tomarkaj.com domain
+    if (
+      allowed.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('tomarkaj.com')
+    ) {
       return callback(null, true);
     }
 

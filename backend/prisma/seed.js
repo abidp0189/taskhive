@@ -283,6 +283,10 @@ async function main() {
   // 2. Legacy admin compatibility: admin@taskhive.com
   const existingLegacy = await prisma.user.findUnique({ where: { email: 'admin@taskhive.com' } });
   if (existingLegacy) {
+    await prisma.user.update({
+      where: { id: existingLegacy.id },
+      data: { passwordHash, status: 'ACTIVE' },
+    });
     await prisma.wallet.upsert({
       where: { userId: existingLegacy.id },
       update: {},
