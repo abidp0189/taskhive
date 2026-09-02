@@ -257,44 +257,57 @@ async function main() {
   // ─── Admin Account ────────────────────────────────
   const passwordHash = await bcrypt.hash('password123', 12);
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@tomarkaj.com' },
-    update: {},
-    create: {
-      name: 'Admin',
-      email: 'admin@tomarkaj.com',
-      passwordHash,
-      role: 'ADMIN',
-      status: 'ACTIVE',
-      referralCode: 'ADMINREF',
-      emailVerifiedAt: new Date(),
-    },
-  });
-  await prisma.wallet.upsert({
-    where: { userId: admin.id },
-    update: {},
-    create: { userId: admin.id },
-  });
+  // 1. Primary admin: admin@tomarkaj.com
+  const existingTomarAdmin = await prisma.user.findUnique({ where: { email: 'admin@tomarkaj.com' } });
+  if (!existingTomarAdmin) {
+    const codeInUse = await prisma.user.findUnique({ where: { referralCode: 'TOMARADMIN' } });
+    const referralCode = codeInUse ? `ADMIN_${Date.now().toString(36).toUpperCase()}` : 'TOMARADMIN';
+    const admin = await prisma.user.create({
+      data: {
+        name: 'Admin',
+        email: 'admin@tomarkaj.com',
+        passwordHash,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        referralCode,
+        emailVerifiedAt: new Date(),
+      },
+    });
+    await prisma.wallet.upsert({
+      where: { userId: admin.id },
+      update: {},
+      create: { userId: admin.id },
+    });
+  }
 
-  // Also maintain backwards compatibility for admin@taskhive.com
-  const legacyAdmin = await prisma.user.upsert({
-    where: { email: 'admin@taskhive.com' },
-    update: {},
-    create: {
-      name: 'Admin',
-      email: 'admin@taskhive.com',
-      passwordHash,
-      role: 'ADMIN',
-      status: 'ACTIVE',
-      referralCode: 'ADMINREF2',
-      emailVerifiedAt: new Date(),
-    },
-  });
-  await prisma.wallet.upsert({
-    where: { userId: legacyAdmin.id },
-    update: {},
-    create: { userId: legacyAdmin.id },
-  });
+  // 2. Legacy admin compatibility: admin@taskhive.com
+  const existingLegacy = await prisma.user.findUnique({ where: { email: 'admin@taskhive.com' } });
+  if (existingLegacy) {
+    await prisma.wallet.upsert({
+      where: { userId: existingLegacy.id },
+      update: {},
+      create: { userId: existingLegacy.id },
+    });
+  } else {
+    const codeInUse = await prisma.user.findUnique({ where: { referralCode: 'ADMINREF' } });
+    const referralCode = codeInUse ? `LEGACY_${Date.now().toString(36).toUpperCase()}` : 'ADMINREF';
+    const legacyAdmin = await prisma.user.create({
+      data: {
+        name: 'Admin',
+        email: 'admin@taskhive.com',
+        passwordHash,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        referralCode,
+        emailVerifiedAt: new Date(),
+      },
+    });
+    await prisma.wallet.upsert({
+      where: { userId: legacyAdmin.id },
+      update: {},
+      create: { userId: legacyAdmin.id },
+    });
+  }
 
   console.log('✅ Admin account seeded');
   console.log('\n🎉 Seeding complete!');
