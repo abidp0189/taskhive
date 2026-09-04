@@ -172,7 +172,7 @@ const submitTask = asyncHandler(async (req, res) => {
           : assignment.resubmitCount,
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   // Notify employer
   await prisma.notification.create({
@@ -274,35 +274,34 @@ const approveSubmission = asyncHandler(async (req, res) => {
       data: { approvedWorkers: { increment: 1 } },
     });
 
-    // Debit employer locked balance
-    const employerWallet = await tx.wallet.findUnique({ where: { userId: job.employerId } });
-    await tx.wallet.update({
+    // Debit employer locked balance (atomic upsert returns updated wallet record)
+    const updatedEmployerWallet = await tx.wallet.upsert({
       where: { userId: job.employerId },
-      data: { lockedBalance: { decrement: rewardAmount } },
+      update: { lockedBalance: { decrement: rewardAmount } },
+      create: { userId: job.employerId, lockedBalance: -rewardAmount },
     });
     await tx.walletTransaction.create({
       data: {
-        walletId: employerWallet.id,
+        walletId: updatedEmployerWallet.id,
         type: 'JOB_BUDGET_SPEND',
         amount: rewardAmount,
         direction: 'DEBIT',
         referenceType: 'TaskAssignment',
         referenceId: assignmentId,
         description: `Reward paid for approved task on job: ${job.title}`,
-        balanceAfter: parseFloat(employerWallet.lockedBalance) - rewardAmount,
+        balanceAfter: parseFloat(updatedEmployerWallet.lockedBalance),
       },
     });
 
-    // Credit worker available balance
-    const workerWallet = assignment.worker.wallet;
-    await tx.wallet.update({
+    // Credit worker available balance (atomic upsert returns updated wallet record)
+    const updatedWorkerWallet = await tx.wallet.upsert({
       where: { userId: assignment.workerId },
-      data: { availableBalance: { increment: rewardAmount } },
+      update: { availableBalance: { increment: rewardAmount } },
+      create: { userId: assignment.workerId, availableBalance: rewardAmount },
     });
-    const updatedWorkerWallet = await tx.wallet.findUnique({ where: { userId: assignment.workerId } });
     await tx.walletTransaction.create({
       data: {
-        walletId: workerWallet.id,
+        walletId: updatedWorkerWallet.id,
         type: 'TASK_REWARD',
         amount: rewardAmount,
         direction: 'CREDIT',
@@ -321,46 +320,43 @@ const approveSubmission = asyncHandler(async (req, res) => {
       const commissionAmount = rewardAmount * commissionRate;
 
       if (commissionAmount > 0) {
-        const referrerWallet = await tx.wallet.findUnique({ where: { userId: referral.referrerId } });
-        if (referrerWallet) {
-          await tx.wallet.update({
-            where: { userId: referral.referrerId },
-            data: { availableBalance: { increment: commissionAmount } },
-          });
-          const updatedRefWallet = await tx.wallet.findUnique({ where: { userId: referral.referrerId } });
-          const walletTx = await tx.walletTransaction.create({
-            data: {
-              walletId: referrerWallet.id,
-              type: 'REFERRAL_COMMISSION',
-              amount: commissionAmount,
-              direction: 'CREDIT',
-              referenceType: 'ReferralCommission',
-              referenceId: referral.id,
-              description: `Referral commission from task approval`,
-              balanceAfter: updatedRefWallet.availableBalance,
-            },
-          });
-          await tx.referralCommission.create({
-            data: {
-              referralId: referral.id,
-              sourceType: 'TASK',
-              sourceAmount: rewardAmount,
-              commissionRate,
-              commissionAmount,
-              walletTransactionId: walletTx.id,
-            },
-          });
-          // Notify referrer
-          await tx.notification.create({
-            data: {
-              userId: referral.referrerId,
-              type: 'REFERRAL_COMMISSION',
-              title: 'Referral Commission Earned',
-              message: `You earned $${commissionAmount.toFixed(2)} referral commission`,
-              link: '/referral',
-            },
-          });
-        }
+        const updatedRefWallet = await tx.wallet.upsert({
+          where: { userId: referral.referrerId },
+          update: { availableBalance: { increment: commissionAmount } },
+          create: { userId: referral.referrerId, availableBalance: commissionAmount },
+        });
+        const walletTx = await tx.walletTransaction.create({
+          data: {
+            walletId: updatedRefWallet.id,
+            type: 'REFERRAL_COMMISSION',
+            amount: commissionAmount,
+            direction: 'CREDIT',
+            referenceType: 'ReferralCommission',
+            referenceId: referral.id,
+            description: `Referral commission from task approval`,
+            balanceAfter: updatedRefWallet.availableBalance,
+          },
+        });
+        await tx.referralCommission.create({
+          data: {
+            referralId: referral.id,
+            sourceType: 'TASK',
+            sourceAmount: rewardAmount,
+            commissionRate,
+            commissionAmount,
+            walletTransactionId: walletTx.id,
+          },
+        });
+        // Notify referrer
+        await tx.notification.create({
+          data: {
+            userId: referral.referrerId,
+            type: 'REFERRAL_COMMISSION',
+            title: 'Referral Commission Earned',
+            message: `You earned $${commissionAmount.toFixed(2)} referral commission`,
+            link: '/referral',
+          },
+        });
       }
     }
 
@@ -387,7 +383,7 @@ const approveSubmission = asyncHandler(async (req, res) => {
     });
 
     return { assignmentId, rewardAmount };
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, result, 'Submission approved and reward credited to worker');
 });
@@ -454,7 +450,7 @@ const rejectSubmission = asyncHandler(async (req, res) => {
         newValue: JSON.stringify({ status: 'REJECTED', reason }),
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, {}, 'Submission rejected');
 });

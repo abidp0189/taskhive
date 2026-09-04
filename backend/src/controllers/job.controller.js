@@ -185,7 +185,7 @@ const startJob = asyncHandler(async (req, res) => {
     });
 
     return assignment;
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return created(res, result, 'Task started. Complete and submit your proof.');
 });
@@ -324,8 +324,8 @@ const createJob = asyncHandler(async (req, res) => {
       });
     }
 
-    // Lock employer budget
-    await tx.wallet.update({
+    // Lock employer budget (atomic update directly returns updated record)
+    const updatedWallet = await tx.wallet.update({
       where: { userId: employerId },
       data: {
         depositBalance: { decrement: totalCharge },
@@ -334,7 +334,6 @@ const createJob = asyncHandler(async (req, res) => {
     });
 
     // Create wallet transaction record
-    const updatedWallet = await tx.wallet.findUnique({ where: { userId: employerId } });
     await tx.walletTransaction.create({
       data: {
         walletId: wallet.id,
@@ -349,7 +348,7 @@ const createJob = asyncHandler(async (req, res) => {
     });
 
     return newJob;
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return created(res, job, isScheduled ? 'Job campaign scheduled successfully' : 'Job campaign created and submitted for review');
 });
@@ -407,14 +406,13 @@ const changeJobStatus = asyncHandler(async (req, res) => {
 
     if (refundAmount > 0 && wallet) {
       await prisma.$transaction(async (tx) => {
-        await tx.wallet.update({
+        const updatedWallet = await tx.wallet.update({
           where: { userId: job.employerId },
           data: {
             lockedBalance: { decrement: refundAmount },
             depositBalance: { increment: refundAmount },
           },
         });
-        const updatedWallet = await tx.wallet.findUnique({ where: { userId: job.employerId } });
         await tx.walletTransaction.create({
           data: {
             walletId: wallet.id,
@@ -427,7 +425,7 @@ const changeJobStatus = asyncHandler(async (req, res) => {
             balanceAfter: updatedWallet.depositBalance,
           },
         });
-      });
+      }, { timeout: 30000, maxWait: 15000 });
     }
   }
 

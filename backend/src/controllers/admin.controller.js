@@ -135,7 +135,7 @@ const updateUserStatus = asyncHandler(async (req, res) => {
         message: reason || `Your account status has been updated to ${status}`,
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, {}, `User status updated to ${status}`);
 });
@@ -158,12 +158,11 @@ const adjustBalance = asyncHandler(async (req, res) => {
       throw Object.assign(new Error('Insufficient balance for deduction'), { statusCode: 400 });
     }
 
-    await tx.wallet.update({
+    const updatedWallet = await tx.wallet.update({
       where: { userId: req.params.id },
       data: { [field]: { increment: adjustAmount } },
     });
 
-    const updatedWallet = await tx.wallet.findUnique({ where: { userId: req.params.id } });
     await tx.walletTransaction.create({
       data: {
         walletId: wallet.id,
@@ -185,7 +184,7 @@ const adjustBalance = asyncHandler(async (req, res) => {
         newValue: JSON.stringify({ [field]: parseFloat(updatedWallet[field]), reason }),
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, {}, 'Balance adjusted');
 });
@@ -248,7 +247,7 @@ const updateJobStatus = asyncHandler(async (req, res) => {
         link: `/employer/jobs/${job.id}`,
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, {}, `Job status updated to ${status}`);
 });
@@ -300,11 +299,10 @@ const processWithdrawal = asyncHandler(async (req, res) => {
       });
       // Deduct from locked balance
       const wallet = withdrawal.user.wallet;
-      await tx.wallet.update({
+      const updatedWallet = await tx.wallet.update({
         where: { userId: withdrawal.userId },
         data: { lockedBalance: { decrement: parseFloat(withdrawal.amount) } },
       });
-      const updatedWallet = await tx.wallet.findUnique({ where: { userId: withdrawal.userId } });
       await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
@@ -338,14 +336,13 @@ const processWithdrawal = asyncHandler(async (req, res) => {
       });
       // Return funds to available balance
       const wallet = withdrawal.user.wallet;
-      await tx.wallet.update({
+      const updatedWallet = await tx.wallet.update({
         where: { userId: withdrawal.userId },
         data: {
           lockedBalance: { decrement: parseFloat(withdrawal.amount) },
           availableBalance: { increment: parseFloat(withdrawal.amount) },
         },
       });
-      const updatedWallet = await tx.wallet.findUnique({ where: { userId: withdrawal.userId } });
       await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
@@ -378,7 +375,7 @@ const processWithdrawal = asyncHandler(async (req, res) => {
         newValue: JSON.stringify({ action, externalReference, reason }),
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, {}, `Withdrawal ${action}d successfully`);
 });
@@ -425,11 +422,10 @@ const confirmDeposit = asyncHandler(async (req, res) => {
     });
 
     const wallet = deposit.user.wallet;
-    await tx.wallet.update({
+    const updatedWallet = await tx.wallet.update({
       where: { userId: deposit.userId },
       data: { depositBalance: { increment: parseFloat(deposit.amount) } },
     });
-    const updatedWallet = await tx.wallet.findUnique({ where: { userId: deposit.userId } });
     await tx.walletTransaction.create({
       data: {
         walletId: wallet.id,
@@ -452,11 +448,10 @@ const confirmDeposit = asyncHandler(async (req, res) => {
       if (commAmount > 0) {
         const refWallet = await tx.wallet.findUnique({ where: { userId: referral.referrerId } });
         if (refWallet) {
-          await tx.wallet.update({
+          const updatedRefWallet = await tx.wallet.update({
             where: { userId: referral.referrerId },
             data: { availableBalance: { increment: commAmount } },
           });
-          const updatedRefWallet = await tx.wallet.findUnique({ where: { userId: referral.referrerId } });
           const wt = await tx.walletTransaction.create({
             data: {
               walletId: refWallet.id,
@@ -492,7 +487,7 @@ const confirmDeposit = asyncHandler(async (req, res) => {
         link: '/wallet',
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, {}, 'Deposit confirmed and balance credited');
 });
@@ -522,7 +517,7 @@ const rejectDeposit = asyncHandler(async (req, res) => {
         action: 'DEPOSIT_REJECTED',
         entityType: 'Deposit',
         entityId: deposit.id,
-        newValue: JSON.stringify({ reason }),
+        newValue: JSON.stringify({ status: 'FAILED', reason }),
       },
     });
 

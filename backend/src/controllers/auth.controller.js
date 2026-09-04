@@ -69,7 +69,7 @@ const register = asyncHandler(async (req, res) => {
     }
 
     return newUser;
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   const accessToken = generateAccessToken({ id: user.id, role: user.role, email: user.email });
   const refreshTokenValue = generateRefreshToken();

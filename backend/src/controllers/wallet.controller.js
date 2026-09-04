@@ -153,8 +153,8 @@ const requestWithdrawal = asyncHandler(async (req, res) => {
   const netAmount = Math.max(0, requestedAmount - fee);
 
   const withdrawal = await prisma.$transaction(async (tx) => {
-    // Lock funds from available balance
-    await tx.wallet.update({
+    // Lock funds from available balance (atomic update returns new balance directly)
+    const updatedWallet = await tx.wallet.update({
       where: { userId: req.user.id },
       data: {
         availableBalance: { decrement: requestedAmount },
@@ -162,7 +162,6 @@ const requestWithdrawal = asyncHandler(async (req, res) => {
       },
     });
 
-    const updatedWallet = await tx.wallet.findUnique({ where: { userId: req.user.id } });
     await tx.walletTransaction.create({
       data: {
         walletId: wallet.id,
@@ -187,7 +186,7 @@ const requestWithdrawal = asyncHandler(async (req, res) => {
         accountDetails: typeof accountDetails === 'object' ? JSON.stringify(accountDetails) : String(accountDetails),
       },
     });
-  });
+  }, { timeout: 30000, maxWait: 15000 });
 
   return success(res, withdrawal, 'Withdrawal request submitted. Admin will process it shortly.');
 });
