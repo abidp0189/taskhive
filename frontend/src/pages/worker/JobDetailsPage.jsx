@@ -358,7 +358,19 @@ export const JobDetailsPage = () => {
         </div>
 
         {/* Action / State Area */}
-        {job.status === 'PAUSED' || job.deletedAt ? (
+        {user?.role === 'EMPLOYER' ? (
+          <div className="pt-4 border-t border-[var(--color-border)] dark:border-gray-800">
+            <div className="p-4 rounded-2xl bg-[var(--color-surface2)] border border-[var(--color-border)] text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                <span className="font-bold text-[var(--color-text)]">Employer Reference Preview (Read-Only)</span>
+              </div>
+              <span className="text-[var(--color-text-secondary)]">
+                You are viewing this campaign for reference. Task execution and proof submission are reserved for worker accounts.
+              </span>
+            </div>
+          </div>
+        ) : job.status === 'PAUSED' || job.deletedAt ? (
           <div className="pt-4 border-t border-gray-800">
             <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800 text-amber-200 text-xs flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />

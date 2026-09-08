@@ -123,8 +123,8 @@ export const EmployerDashboard = () => {
       </div>
 
       {/* Posted Campaigns / Explore Jobs Panel */}
-      <div className="glass-panel rounded-3xl p-6 overflow-hidden border border-gray-800 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-800 gap-3">
+      <div className="glass-panel rounded-3xl p-4 sm:p-6 overflow-hidden border border-[var(--color-border)] dark:border-gray-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[var(--color-border)] dark:border-gray-800 gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -151,7 +151,7 @@ export const EmployerDashboard = () => {
           </div>
 
           {activeTab === 'my_jobs' && (
-            <Link to="/employer/jobs" className="text-xs font-semibold text-indigo-400 hover:text-indigo-300">
+            <Link to="/employer/jobs" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
               View All My Jobs →
             </Link>
           )}
@@ -166,61 +166,111 @@ export const EmployerDashboard = () => {
               <p className="text-xs text-gray-400">You haven't posted any jobs yet.</p>
               <Link
                 to="/employer/jobs/new"
-                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-2 text-xs font-semibold text-white transition-colors"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 px-4 py-2 text-xs font-semibold text-white transition-colors"
               >
                 <PlusCircle className="h-4 w-4" /> Create Your First Campaign
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-950/80 border-b border-gray-800 text-gray-400 uppercase font-semibold">
-                  <tr>
-                    <th className="py-3 px-4">Campaign Title</th>
-                    <th className="py-3 px-4">Progress / Slots</th>
-                    <th className="py-3 px-4">Reward / Worker</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800/60">
-                  {jobs.map((job) => (
-                    <tr key={job.id} className="hover:bg-gray-850/50 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-white max-w-xs truncate">
-                        {job.title}
-                        <span className="block text-[11px] text-gray-400 font-normal">{job.category?.name}</span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="text-gray-300 font-medium">
+            <>
+              {/* Mobile Card List (< sm screens) */}
+              <div className="sm:hidden space-y-3">
+                {jobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className="p-4 rounded-2xl bg-[var(--color-surface2)] border border-[var(--color-border)] space-y-3 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm text-[var(--color-text)] truncate">{job.title}</h4>
+                        <span className="text-xs text-[var(--color-text-secondary)]">{job.category?.name}</span>
+                      </div>
+                      <Badge>{job.status}</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-2 border-t border-[var(--color-border)]/60">
+                      <div>
+                        <span className="text-[var(--color-text-secondary)] block text-[10px]">Progress</span>
+                        <span className="font-semibold text-[var(--color-text)]">
                           {job.approvedWorkers || 0} / {job.totalWorkers} approved
                         </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-emerald-400">
-                        ${parseFloat(job.rewardPerWorker).toFixed(2)}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <Badge>{job.status}</Badge>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <Link
-                          to={`/employer/jobs/${job.id}/submissions`}
-                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow transition-colors"
-                        >
-                          Review Proofs
-                        </Link>
-                      </td>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[var(--color-text-secondary)] block text-[10px]">Reward</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                          ${parseFloat(job.rewardPerWorker).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      to={`/employer/jobs/${job.id}/submissions`}
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-xs shadow transition-all cursor-pointer"
+                    >
+                      Review Proofs ({job._count?.assignments || 0})
+                    </Link>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop / Tablet Table (>= sm screens) */}
+              <div className="hidden sm:block overflow-x-auto touch-scroll">
+                <table className="w-full min-w-[620px] text-left text-xs">
+                  <thead className="bg-[var(--color-surface2)] border-b border-[var(--color-border)] text-[var(--color-text-secondary)] uppercase font-semibold">
+                    <tr>
+                      <th className="py-3 px-4">Campaign Title</th>
+                      <th className="py-3 px-4">Progress / Slots</th>
+                      <th className="py-3 px-4">Reward / Worker</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-border)]">
+                    {jobs.map((job) => (
+                      <tr key={job.id} className="hover:bg-[var(--color-surface2)] transition-colors">
+                        <td className="py-3.5 px-4 font-semibold text-[var(--color-text)] max-w-xs truncate">
+                          {job.title}
+                          <span className="block text-[11px] text-[var(--color-text-secondary)] font-normal">{job.category?.name}</span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="text-[var(--color-text)] font-medium">
+                            {job.approvedWorkers || 0} / {job.totalWorkers} approved
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">
+                          ${parseFloat(job.rewardPerWorker).toFixed(2)}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <Badge>{job.status}</Badge>
+                        </td>
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <Link
+                            to={`/employer/jobs/${job.id}/submissions`}
+                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold shadow transition-all cursor-pointer"
+                          >
+                            Review Proofs
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )
         ) : (
-          /* Explore Jobs Tab (Browse-only, no detail view or actions for employers) */
+          /* Explore Jobs Tab (Browse/reference for employers) */
           <div>
-            <div className="p-3 mb-3 rounded-xl bg-[var(--color-surface2)] border border-[var(--color-border)] text-xs text-[var(--color-text)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <span>Browsing active marketplace jobs. (Summary view only — job submission and full instructions are for workers).</span>
-              <span className="font-semibold text-[var(--color-text-secondary)] shrink-0">{exploreJobs.length} jobs shown</span>
+            <div className="p-3.5 mb-3 rounded-2xl bg-[var(--color-surface2)] border border-[var(--color-border)] text-xs text-[var(--color-text)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div>
+                <span className="font-bold block text-sm text-[var(--color-text)]">Marketplace Explorer (Reference Only)</span>
+                <span className="text-[var(--color-text-secondary)] text-xs">
+                  Preview active worker tasks to benchmark rewards and formats. Employer accounts cannot submit proofs to other employers' jobs.
+                </span>
+              </div>
+              <span className="font-bold text-xs text-purple-700 dark:text-purple-300 shrink-0 self-end sm:self-auto px-2.5 py-1 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+                {exploreJobs.length} active jobs
+              </span>
             </div>
 
             {exploreLoading ? (
@@ -228,47 +278,87 @@ export const EmployerDashboard = () => {
             ) : exploreJobs.length === 0 ? (
               <div className="py-12 text-center text-xs text-gray-400">No active marketplace jobs currently available.</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-gray-950/80 border-b border-gray-800 text-gray-400 uppercase font-semibold">
-                    <tr>
-                      <th className="py-3 px-4">Job Title</th>
-                      <th className="py-3 px-4">Category</th>
-                      <th className="py-3 px-4">Reward</th>
-                      <th className="py-3 px-4">Total Workers</th>
-                      <th className="py-3 px-4 text-right">Access</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800/60">
-                    {exploreJobs.map((ej) => (
-                      <tr key={ej.id} className="hover:bg-gray-850/50 transition-colors">
-                        <td className="py-3.5 px-4 font-semibold text-white max-w-sm">
-                          <p className="truncate">{ej.title}</p>
-                          {ej.shortDescription && (
-                            <p className="text-[11px] text-gray-400 truncate mt-0.5">{ej.shortDescription}</p>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-gray-300">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] bg-gray-900 border border-gray-800 text-gray-300">
-                            {ej.category?.name || 'General'}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-emerald-400">
+              <>
+                {/* Mobile Cards for Marketplace Jobs */}
+                <div className="sm:hidden space-y-3">
+                  {exploreJobs.map((ej) => (
+                    <div
+                      key={ej.id}
+                      className="p-4 rounded-2xl bg-[var(--color-surface2)] border border-[var(--color-border)] space-y-3 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-sm text-[var(--color-text)] truncate">{ej.title}</h4>
+                          <span className="text-xs text-[var(--color-text-secondary)]">{ej.category?.name || 'General'}</span>
+                        </div>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                           ${parseFloat(ej.rewardPerWorker).toFixed(2)}
-                        </td>
-                        <td className="py-3.5 px-4 text-gray-300">
-                          {ej.totalWorkers} slots
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <span className="text-[11px] text-gray-500 italic bg-gray-900/60 px-2.5 py-1 rounded-lg border border-gray-800">
-                            Browse Only
-                          </span>
-                        </td>
+                        </span>
+                      </div>
+
+                      {ej.shortDescription && (
+                        <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2">{ej.shortDescription}</p>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border)]/60 text-xs">
+                        <span className="text-[var(--color-text-secondary)]">{ej.totalWorkers} worker slots</span>
+                        <Link
+                          to={`/jobs/${ej.id}`}
+                          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-sm transition-all"
+                        >
+                          Preview Job →
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table for Marketplace Jobs */}
+                <div className="hidden sm:block overflow-x-auto touch-scroll">
+                  <table className="w-full min-w-[620px] text-left text-xs">
+                    <thead className="bg-[var(--color-surface2)] border-b border-[var(--color-border)] text-[var(--color-text-secondary)] uppercase font-semibold">
+                      <tr>
+                        <th className="py-3 px-4">Job Title</th>
+                        <th className="py-3 px-4">Category</th>
+                        <th className="py-3 px-4">Reward</th>
+                        <th className="py-3 px-4">Total Workers</th>
+                        <th className="py-3 px-4 text-right">Access</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-border)]">
+                      {exploreJobs.map((ej) => (
+                        <tr key={ej.id} className="hover:bg-[var(--color-surface2)] transition-colors">
+                          <td className="py-3.5 px-4 font-semibold text-[var(--color-text)] max-w-sm">
+                            <p className="truncate">{ej.title}</p>
+                            {ej.shortDescription && (
+                              <p className="text-[11px] text-[var(--color-text-secondary)] truncate mt-0.5">{ej.shortDescription}</p>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-[var(--color-text-secondary)]">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)]">
+                              {ej.category?.name || 'General'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">
+                            ${parseFloat(ej.rewardPerWorker).toFixed(2)}
+                          </td>
+                          <td className="py-3.5 px-4 text-[var(--color-text)]">
+                            {ej.totalWorkers} slots
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <Link
+                              to={`/jobs/${ej.id}`}
+                              className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold shadow-sm transition-all inline-flex items-center gap-1"
+                            >
+                              Preview Job →
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}
