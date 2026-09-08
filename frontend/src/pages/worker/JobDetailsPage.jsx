@@ -337,20 +337,20 @@ export const JobDetailsPage = () => {
 
         {/* Required Proof Brief */}
         <div className="space-y-3">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-purple-400" /> What to Submit as Proof
+          <h3 className="text-sm font-bold text-[var(--color-text)] flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" /> What to Submit as Proof
           </h3>
-          <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-900/40 text-xs sm:text-sm text-purple-200 leading-relaxed">
+          <div className="p-5 rounded-2xl bg-[var(--color-surface2)] border border-[var(--color-border)] text-xs sm:text-sm text-[var(--color-text)] leading-relaxed font-medium">
             {job.proofRequirements}
           </div>
 
           {job.requiresScreenshot && (
-            <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/50 flex items-center gap-3">
-              <Camera className="h-5 w-5 text-indigo-400 shrink-0" />
+            <div className="p-4 rounded-2xl bg-[var(--color-surface2)] border-2 border-purple-500/40 flex items-center gap-3">
+              <Camera className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0" />
               <div className="text-xs">
-                <span className="font-bold text-white">Screenshot Quantity Requirement:</span>
-                <span className="text-indigo-200 ml-1.5">
-                  This employer requires exactly or at least <strong>{job.screenshotQuantity || 1} screenshot(s)</strong> as evidence.
+                <span className="font-bold text-[var(--color-text)]">Screenshot Quantity Requirement:</span>
+                <span className="text-[var(--color-text-secondary)] ml-1.5 font-medium">
+                  This employer requires exactly or at least <strong className="text-purple-700 dark:text-purple-300 font-bold">{job.screenshotQuantity || 1} screenshot(s)</strong> as evidence.
                 </span>
               </div>
             </div>

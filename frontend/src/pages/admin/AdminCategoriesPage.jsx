@@ -187,7 +187,7 @@ export const AdminCategoriesPage = () => {
                         setSelectedCatId(cat.id);
                         setShowAddSub(true);
                       }}
-                      className="flex items-center gap-1 px-3 py-1 rounded-xl bg-purple-600/20 hover:bg-purple-600 border border-purple-500/30 text-purple-300 hover:text-white text-[11px] font-semibold transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
                     >
                       <Plus className="h-3.5 w-3.5" /> Add Subcategory
                     </button>

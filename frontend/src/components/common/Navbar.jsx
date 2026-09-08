@@ -372,14 +372,29 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile menu button & actions */}
+          <div className="flex md:hidden items-center gap-1.5">
+            {/* Mobile Wallet Balance Pill */}
+            {user && (
+              <Link
+                to={user.role === 'EMPLOYER' ? '/employer/wallet' : '/wallet'}
+                className="flex items-center gap-1 rounded-lg bg-[var(--color-surface2)] border border-[var(--color-border)] px-2 py-1 text-[11px] font-bold text-[var(--color-text)] shrink-0"
+              >
+                <WalletIcon className="h-3 w-3 text-emerald-500" />
+                <span>
+                  ${user.role === 'EMPLOYER'
+                    ? (parseFloat(wallet?.depositBalance || 0)).toFixed(2)
+                    : (parseFloat(wallet?.availableBalance || 0)).toFixed(2)}
+                </span>
+              </Link>
+            )}
+
             {/* Theme Toggle Mobile */}
             <button
               type="button"
               onClick={toggleTheme}
               aria-label="Toggle Bright/Dark Theme"
-              className="h-8 w-8 rounded-full flex items-center justify-center border border-[var(--color-border)] bg-[var(--color-surface2)] text-[var(--color-text)]"
+              className="h-8 w-8 rounded-full flex items-center justify-center border border-[var(--color-border)] bg-[var(--color-surface2)] text-[var(--color-text)] shrink-0 cursor-pointer"
             >
               {theme === 'dark' ? (
                 <Sun className="h-3.5 w-3.5 text-amber-300" />
@@ -391,7 +406,7 @@ export const Navbar = () => {
             {user && <NotificationDropdown />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-xl p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface2)] hover:text-[var(--color-text)]"
+              className="rounded-xl p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface2)] hover:text-[var(--color-text)] shrink-0 cursor-pointer"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -405,12 +420,19 @@ export const Navbar = () => {
           {user ? (
             <>
               <div className="flex items-center gap-3 p-3 bg-[var(--color-surface2)] rounded-xl mb-3 border border-[var(--color-border)]">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-btn-primary)] text-[var(--color-btn-text)] font-bold">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-btn-primary)] text-[var(--color-btn-text)] font-bold shrink-0">
                   {user.name?.charAt(0) || 'U'}
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-[var(--color-text)]">{user.name}</p>
-                  <Badge variant="primary">{user.role}</Badge>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-[var(--color-text)] truncate">{user.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="primary" className="text-[10px] py-0 px-1.5">{user.role}</Badge>
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                      {user.role === 'EMPLOYER'
+                        ? `Deposit: $${(parseFloat(wallet?.depositBalance || 0)).toFixed(2)}`
+                        : `Earned: $${(parseFloat(wallet?.availableBalance || 0)).toFixed(2)}`}
+                    </span>
+                  </div>
                 </div>
               </div>
 

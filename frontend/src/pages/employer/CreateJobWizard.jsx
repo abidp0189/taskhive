@@ -15,7 +15,9 @@ import {
   Calendar,
   Clock,
   Camera,
-  Info
+  Info,
+  Minus,
+  Plus
 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -281,27 +283,27 @@ export const CreateJobWizard = () => {
           return (
             <div
               key={s.num}
-              className={`p-3 rounded-2xl border text-center transition-all flex flex-col sm:flex-row items-center justify-center gap-2 ${
+              className={`p-2 sm:p-3 rounded-2xl border text-center transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 ${
                 isActive
-                  ? 'bg-purple-950/60 border-purple-500 text-white shadow-lg shadow-purple-500/10'
+                  ? 'bg-purple-600 border-purple-600 text-white shadow-md font-bold'
                   : isDone
-                  ? 'bg-gray-900 border-gray-700 text-purple-400'
-                  : 'bg-gray-950/60 border-gray-800 text-gray-500'
+                  ? 'bg-emerald-600/15 border-emerald-500/50 text-emerald-700 dark:text-emerald-300 font-semibold'
+                  : 'bg-[var(--color-surface2)] border-[var(--color-border)] text-[var(--color-text-secondary)] opacity-70'
               }`}
             >
-              <div className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold ${
-                isActive ? 'bg-purple-600 text-white' : isDone ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-gray-800 text-gray-400'
+              <div className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                isActive ? 'bg-white text-purple-700 shadow-sm' : isDone ? 'bg-emerald-600 text-white' : 'bg-[var(--color-surface3)] text-[var(--color-text)]'
               }`}>
                 {isDone ? <CheckCircle2 className="h-4 w-4" /> : s.num}
               </div>
-              <span className="text-xs font-semibold hidden sm:inline">{s.title}</span>
+              <span className="text-[10px] sm:text-xs font-semibold truncate max-w-full">{s.title}</span>
             </div>
           );
         })}
       </div>
 
       {/* Step Content Container */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+      <div className="glass-panel rounded-3xl p-4 sm:p-8 space-y-6">
         {/* ─── STEP 1: Location ─────────────────────── */}
         {step === 1 && (
           <div className="space-y-6">
@@ -315,13 +317,17 @@ export const CreateJobWizard = () => {
                 onClick={() => setFormData({ ...formData, targetType: 'GLOBAL', selectedCountries: [] })}
                 className={`p-5 rounded-2xl border text-left transition-all ${
                   formData.targetType === 'GLOBAL'
-                    ? 'border-purple-500 bg-purple-950/30 text-white shadow-md'
-                    : 'border-gray-800 bg-gray-950/60 text-gray-400 hover:border-gray-700 hover:text-white'
+                    ? 'border-purple-600 bg-purple-600 text-white shadow-lg ring-2 ring-purple-400/40'
+                    : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-purple-400 hover:shadow-sm'
                 }`}
               >
                 <span className="text-2xl mb-2 block">🌍</span>
-                <h4 className="text-sm font-bold text-white">Global (Worldwide Workers)</h4>
-                <p className="text-xs text-gray-400 mt-1">Allow micro-workers from all supported nations to complete your task.</p>
+                <h4 className={`text-sm font-bold ${formData.targetType === 'GLOBAL' ? 'text-white' : 'text-[var(--color-text)]'}`}>
+                  Global (Worldwide Workers)
+                </h4>
+                <p className={`text-xs mt-1 ${formData.targetType === 'GLOBAL' ? 'text-purple-100 font-medium' : 'text-[var(--color-text-secondary)]'}`}>
+                  Allow micro-workers from all supported nations to complete your task.
+                </p>
               </button>
 
               <button
@@ -329,13 +335,17 @@ export const CreateJobWizard = () => {
                 onClick={() => setFormData({ ...formData, targetType: 'COUNTRY' })}
                 className={`p-5 rounded-2xl border text-left transition-all ${
                   formData.targetType === 'COUNTRY'
-                    ? 'border-purple-500 bg-purple-950/30 text-white shadow-md'
-                    : 'border-gray-800 bg-gray-950/60 text-gray-400 hover:border-gray-700 hover:text-white'
+                    ? 'border-purple-600 bg-purple-600 text-white shadow-lg ring-2 ring-purple-400/40'
+                    : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-purple-400 hover:shadow-sm'
                 }`}
               >
                 <span className="text-2xl mb-2 block">🎯</span>
-                <h4 className="text-sm font-bold text-white">Specific Countries</h4>
-                <p className="text-xs text-gray-400 mt-1">Restrict task eligibility exclusively to workers in selected nations.</p>
+                <h4 className={`text-sm font-bold ${formData.targetType === 'COUNTRY' ? 'text-white' : 'text-[var(--color-text)]'}`}>
+                  Specific Countries
+                </h4>
+                <p className={`text-xs mt-1 ${formData.targetType === 'COUNTRY' ? 'text-purple-100 font-medium' : 'text-[var(--color-text-secondary)]'}`}>
+                  Restrict task eligibility exclusively to workers in selected nations.
+                </p>
               </button>
             </div>
 
@@ -377,21 +387,26 @@ export const CreateJobWizard = () => {
 
             {/* Category Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {categories.map((cat) => (
-                <button
-                  type="button"
-                  key={cat.id}
-                  onClick={() => handleCategorySelect(cat)}
-                  className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                    formData.categoryId === cat.id
-                      ? 'border-purple-500 bg-purple-950/40 text-white shadow-md'
-                      : 'border-gray-800 bg-gray-950/60 text-gray-400 hover:border-gray-700 hover:text-white'
-                  }`}
-                >
-                  <h4 className="text-xs font-bold text-white">{cat.name}</h4>
-                  <p className="text-[10px] text-gray-400 mt-1 line-clamp-2">{cat.description || `${cat.subcategories?.length || 0} task options`}</p>
-                </button>
-              ))}
+              {categories.map((cat) => {
+                const isSelected = formData.categoryId === cat.id;
+                return (
+                  <button
+                    type="button"
+                    key={cat.id}
+                    onClick={() => handleCategorySelect(cat)}
+                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between min-h-[88px] ${
+                      isSelected
+                        ? 'border-purple-600 bg-purple-600 text-white shadow-lg ring-2 ring-purple-400/40'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-purple-400 hover:shadow-sm'
+                    }`}
+                  >
+                    <h4 className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-[var(--color-text)]'}`}>{cat.name}</h4>
+                    <p className={`text-[10px] mt-1 line-clamp-2 ${isSelected ? 'text-purple-100 font-medium' : 'text-[var(--color-text-secondary)]'}`}>
+                      {cat.description || `${cat.subcategories?.length || 0} task options`}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Subcategories */}
@@ -410,17 +425,21 @@ export const CreateJobWizard = () => {
                         onClick={() => handleSubcategorySelect(sub.id)}
                         className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                           isSelected
-                            ? 'border-purple-500 bg-purple-900/30 text-white'
-                            : 'border-gray-800/80 bg-gray-900 text-gray-300 hover:border-gray-700'
+                            ? 'border-purple-600 bg-purple-600 text-white shadow-md'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface2)] text-[var(--color-text)] hover:border-purple-400'
                         }`}
                       >
                         <div>
-                          <p className="text-xs font-bold">{sub.name}</p>
+                          <p className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-[var(--color-text)]'}`}>{sub.name}</p>
                           {sub.defaultCriteria && (
-                            <p className="text-[10px] text-gray-400 line-clamp-1">{sub.defaultCriteria}</p>
+                            <p className={`text-[10px] line-clamp-1 ${isSelected ? 'text-purple-100 font-medium' : 'text-[var(--color-text-secondary)]'}`}>
+                              {sub.defaultCriteria}
+                            </p>
                           )}
                         </div>
-                        <span className="text-xs font-mono font-bold text-emerald-400 shrink-0 ml-2">
+                        <span className={`text-xs font-mono font-bold shrink-0 ml-2 px-2 py-0.5 rounded-md ${
+                          isSelected ? 'bg-black/30 text-emerald-300 border border-emerald-500/40' : 'text-emerald-500 dark:text-emerald-400'
+                        }`}>
                           ${parseFloat(sub.defaultReward || 0.02).toFixed(3)}
                         </span>
                       </button>
@@ -487,15 +506,15 @@ export const CreateJobWizard = () => {
             </div>
 
             {/* Screenshot Proof Toggle & Quantity */}
-            <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[var(--color-surface2)] dark:bg-gray-950 border border-[var(--color-border)] dark:border-gray-800 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-purple-950/60 border border-purple-800 text-purple-400 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md">
                     <Camera className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Require Screenshot Proof Image</h4>
-                    <p className="text-[11px] text-gray-400">Adds 3% proof verification fee to campaign escrow</p>
+                    <h4 className="text-sm font-bold text-[var(--color-text)] dark:text-white">Require Screenshot Proof Image</h4>
+                    <p className="text-xs text-[var(--color-text-secondary)] dark:text-gray-400">Adds 3% proof verification fee to campaign escrow</p>
                   </div>
                 </div>
                 <input
@@ -507,30 +526,88 @@ export const CreateJobWizard = () => {
               </div>
 
               {formData.requiresScreenshot && (
-                <div className="pt-3 border-t border-gray-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-purple-950/20 p-3 rounded-xl border border-purple-900/30">
-                  <div>
-                    <label className="block text-xs font-semibold text-white">
-                      Required Number of Screenshots
-                    </label>
-                    <p className="text-[11px] text-gray-400">
-                      Workers must upload exactly or at least this many screenshots to submit proof
-                    </p>
+                <div className="pt-4 border-t border-[var(--color-border)] dark:border-gray-800/80 space-y-3 bg-[var(--color-surface)] dark:bg-purple-950/30 p-4 rounded-xl border border-purple-500/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-bold text-[var(--color-text)] dark:text-white">
+                        Required Number of Screenshots
+                      </label>
+                      <p className="text-xs text-[var(--color-text-secondary)] dark:text-gray-400">
+                        Workers must upload exactly or at least this many screenshots to submit proof
+                      </p>
+                    </div>
+
+                    {/* Touch-Friendly Stepper Control */}
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        aria-label="Decrease screenshot quantity"
+                        disabled={formData.screenshotQuantity <= 1}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            screenshotQuantity: Math.max(1, (formData.screenshotQuantity || 1) - 1),
+                          })
+                        }
+                        className="w-9 h-9 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center font-black text-base shadow-sm transition-transform active:scale-95 cursor-pointer"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={formData.screenshotQuantity}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            screenshotQuantity: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)),
+                          })
+                        }
+                        className="w-14 h-9 rounded-xl bg-[var(--color-surface2)] dark:bg-gray-900 border-2 border-purple-500 text-center text-sm font-black text-[var(--color-text)] dark:text-white focus:outline-none shadow-inner no-spinners"
+                      />
+
+                      <button
+                        type="button"
+                        aria-label="Increase screenshot quantity"
+                        disabled={formData.screenshotQuantity >= 10}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            screenshotQuantity: Math.min(10, (formData.screenshotQuantity || 1) + 1),
+                          })
+                        }
+                        className="w-9 h-9 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center font-black text-base shadow-sm transition-transform active:scale-95 cursor-pointer"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+
+                      <span className="text-xs font-bold text-[var(--color-text)] dark:text-purple-200 ml-1">
+                        screenshot(s)
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={formData.screenshotQuantity}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          screenshotQuantity: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)),
-                        })
-                      }
-                      className="w-20 rounded-xl bg-gray-900 border border-purple-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:border-purple-500 focus:outline-none"
-                    />
-                    <span className="text-xs text-purple-300 font-medium">screenshot(s)</span>
+
+                  {/* Quick Select Buttons for Phones / Tablets */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--color-border)] dark:border-purple-900/40">
+                    <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)] dark:text-purple-300 mr-1">
+                      Quick Pick:
+                    </span>
+                    {[1, 2, 3, 4, 5].map((qty) => (
+                      <button
+                        key={qty}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, screenshotQuantity: qty })}
+                        className={`h-7 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          formData.screenshotQuantity === qty
+                            ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-400/40'
+                            : 'bg-[var(--color-surface2)] text-[var(--color-text)] border border-[var(--color-border)] hover:border-purple-400'
+                        }`}
+                      >
+                        {qty} {qty === 1 ? 'SS' : 'SS'}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -750,22 +827,22 @@ export const CreateJobWizard = () => {
         )}
 
         {/* Wizard Controls Navigation */}
-        <div className="pt-4 border-t border-gray-800 flex items-center justify-between">
+        <div className="pt-4 border-t border-[var(--color-border)] dark:border-gray-800 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {step > 1 ? (
             <button
               type="button"
               onClick={handlePrev}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:bg-gray-800 text-xs font-semibold text-gray-300 transition-colors"
+              className="flex items-center justify-center gap-1.5 px-6 py-3 rounded-xl bg-[var(--color-surface2)] hover:bg-[var(--color-surface3)] border border-[var(--color-border)] text-xs sm:text-sm font-bold text-[var(--color-text)] transition-colors w-full sm:w-auto cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" /> Previous
             </button>
-          ) : <div />}
+          ) : <div className="hidden sm:block" />}
 
           {step < 4 ? (
             <button
               type="button"
               onClick={handleNext}
-              className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-semibold text-white shadow transition-all hover:scale-105"
+              className="flex items-center justify-center gap-1.5 px-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-xs sm:text-sm font-bold text-white shadow-md transition-all w-full sm:w-auto cursor-pointer"
             >
               Next Step <ArrowRight className="h-4 w-4" />
             </button>
@@ -774,7 +851,7 @@ export const CreateJobWizard = () => {
               type="button"
               disabled={submitting || !hasEnoughFunds || !meetsMinBudget}
               onClick={handleSubmitJob}
-              className="flex items-center gap-1.5 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all hover:scale-105"
+              className="flex items-center justify-center gap-1.5 px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 active:scale-95 text-xs sm:text-sm font-bold text-white shadow-lg transition-all w-full sm:w-auto cursor-pointer"
             >
               {submitting ? 'Creating Campaign...' : 'Lock Budget & Post Job'}
             </button>

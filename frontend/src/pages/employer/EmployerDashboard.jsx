@@ -125,28 +125,28 @@ export const EmployerDashboard = () => {
       {/* Posted Campaigns / Explore Jobs Panel */}
       <div className="glass-panel rounded-3xl p-6 overflow-hidden border border-gray-800 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-800 gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => handleTabChange('my_jobs')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'my_jobs'
-                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-850/50'
+                  ? 'bg-purple-600 text-white shadow-md border border-purple-600'
+                  : 'bg-[var(--color-surface2)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] border border-[var(--color-border)]'
               }`}
             >
-              <Layers className="h-4 w-4 text-purple-400" /> My Job Campaigns
+              <Layers className={`h-4 w-4 ${activeTab === 'my_jobs' ? 'text-white' : 'text-purple-500'}`} /> My Job Campaigns
             </button>
             <button
               type="button"
               onClick={() => handleTabChange('explore_jobs')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'explore_jobs'
-                  ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-850/50'
+                  ? 'bg-indigo-600 text-white shadow-md border border-indigo-600'
+                  : 'bg-[var(--color-surface2)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] border border-[var(--color-border)]'
               }`}
             >
-              <Briefcase className="h-4 w-4 text-indigo-400" /> Explore Jobs
+              <Briefcase className={`h-4 w-4 ${activeTab === 'explore_jobs' ? 'text-white' : 'text-indigo-500'}`} /> Explore Jobs
             </button>
           </div>
 
@@ -218,9 +218,9 @@ export const EmployerDashboard = () => {
         ) : (
           /* Explore Jobs Tab (Browse-only, no detail view or actions for employers) */
           <div>
-            <div className="p-3 mb-3 rounded-xl bg-indigo-950/30 border border-indigo-800/40 text-[11px] text-indigo-300 flex items-center justify-between">
+            <div className="p-3 mb-3 rounded-xl bg-[var(--color-surface2)] border border-[var(--color-border)] text-xs text-[var(--color-text)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <span>Browsing active marketplace jobs. (Summary view only — job submission and full instructions are for workers).</span>
-              <span className="font-semibold text-gray-400">{exploreJobs.length} jobs shown</span>
+              <span className="font-semibold text-[var(--color-text-secondary)] shrink-0">{exploreJobs.length} jobs shown</span>
             </div>
 
             {exploreLoading ? (

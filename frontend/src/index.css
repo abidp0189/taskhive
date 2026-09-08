@@ -262,31 +262,40 @@ html:not(.dark) {
     color: var(--color-text);
   }
 
-  /* BUT any text inside colored action buttons, links, or badges MUST ALWAYS remain white */
-  button[class*="bg-purple-"],
-  button[class*="bg-indigo-"],
-  button[class*="bg-emerald-"],
-  button[class*="bg-rose-"],
-  button[class*="bg-teal-"],
-  button[class*="bg-blue-"],
-  button[class*="bg-sky-"],
-  button[class*="bg-red-"],
+  /* BUT any text inside SOLID colored action buttons, links, or badges MUST ALWAYS remain white */
+  button[class*="bg-purple-600"],
+  button[class*="bg-purple-700"],
+  button[class*="bg-purple-800"],
+  button[class*="bg-indigo-600"],
+  button[class*="bg-indigo-700"],
+  button[class*="bg-indigo-800"],
+  button[class*="bg-emerald-600"],
+  button[class*="bg-emerald-700"],
+  button[class*="bg-rose-600"],
+  button[class*="bg-rose-700"],
+  button[class*="bg-teal-600"],
+  button[class*="bg-teal-700"],
+  button[class*="bg-blue-600"],
+  button[class*="bg-sky-600"],
+  button[class*="bg-red-600"],
   button[class*="from-"],
-  a[class*="bg-purple-"],
-  a[class*="bg-indigo-"],
-  a[class*="bg-emerald-"],
-  a[class*="bg-rose-"],
-  a[class*="bg-teal-"],
-  a[class*="bg-blue-"],
-  a[class*="bg-sky-"],
+  a[class*="bg-purple-600"],
+  a[class*="bg-purple-700"],
+  a[class*="bg-purple-800"],
+  a[class*="bg-indigo-600"],
+  a[class*="bg-indigo-700"],
+  a[class*="bg-indigo-800"],
+  a[class*="bg-emerald-600"],
+  a[class*="bg-emerald-700"],
+  a[class*="bg-rose-600"],
+  a[class*="bg-rose-700"],
+  a[class*="bg-teal-600"],
+  a[class*="bg-blue-600"],
+  a[class*="bg-sky-600"],
   a[class*="from-"],
   .btn-theme-primary,
-  [class*="bg-purple-600"],
-  [class*="bg-indigo-600"],
-  [class*="bg-emerald-600"],
-  [class*="bg-rose-600"],
-  [class*="bg-teal-600"],
-  [class*="bg-blue-600"],
+  [class*="bg-purple-600"]:not(button):not(a):not(div),
+  [class*="bg-indigo-600"]:not(button):not(a):not(div),
   [class*="from-purple-"],
   [class*="from-indigo-"],
   [class*="from-emerald-"],
@@ -295,26 +304,34 @@ html:not(.dark) {
     color: #ffffff !important;
   }
 
-  /* All child text & icons inside colored action buttons/links must stay white */
-  button[class*="bg-purple-"] *,
-  button[class*="bg-indigo-"] *,
-  button[class*="bg-emerald-"] *,
-  button[class*="bg-rose-"] *,
-  button[class*="bg-teal-"] *,
-  button[class*="bg-blue-"] *,
+  /* All child text & icons inside SOLID colored action buttons/links must stay white */
+  button[class*="bg-purple-600"] *,
+  button[class*="bg-purple-700"] *,
+  button[class*="bg-purple-800"] *,
+  button[class*="bg-indigo-600"] *,
+  button[class*="bg-indigo-700"] *,
+  button[class*="bg-indigo-800"] *,
+  button[class*="bg-emerald-600"] *,
+  button[class*="bg-emerald-700"] *,
+  button[class*="bg-rose-600"] *,
+  button[class*="bg-rose-700"] *,
+  button[class*="bg-teal-600"] *,
+  button[class*="bg-teal-700"] *,
+  button[class*="bg-blue-600"] *,
   button[class*="from-"] *,
-  a[class*="bg-purple-"] *,
-  a[class*="bg-indigo-"] *,
-  a[class*="bg-emerald-"] *,
-  a[class*="bg-rose-"] *,
-  a[class*="bg-teal-"] *,
-  a[class*="bg-blue-"] *,
-  a[class*="from-"] *,
-  [class*="from-purple-"] *,
-  [class*="from-indigo-"] *,
-  [class*="from-emerald-"] *,
-  [class*="from-rose-"] *,
-  [class*="from-teal-"] * {
+  a[class*="bg-purple-600"] *,
+  a[class*="bg-purple-700"] *,
+  a[class*="bg-purple-800"] *,
+  a[class*="bg-indigo-600"] *,
+  a[class*="bg-indigo-700"] *,
+  a[class*="bg-indigo-800"] *,
+  a[class*="bg-emerald-600"] *,
+  a[class*="bg-emerald-700"] *,
+  a[class*="bg-rose-600"] *,
+  a[class*="bg-rose-700"] *,
+  a[class*="bg-teal-600"] *,
+  a[class*="bg-blue-600"] *,
+  a[class*="from-"] * {
     color: #ffffff !important;
   }
 
@@ -397,15 +414,16 @@ html:not(.dark) {
     background-color: var(--color-surface3) !important;
   }
 
-  /* Accent Colored Containers in Light Mode (clean, readable light pastels) */
+  /* Accent Colored Containers in Light Mode — clean surfaces with crisp borders and dark text */
   .bg-indigo-950,
   .bg-indigo-950\/20,
   .bg-indigo-950\/30,
   .bg-indigo-950\/40,
   .bg-indigo-950\/60,
   .bg-indigo-950\/80 {
-    background-color: #eef2ff !important;
-    border-color: #c7d2fe !important;
+    background-color: var(--color-surface2) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text) !important;
   }
 
   .bg-purple-950,
@@ -413,8 +431,9 @@ html:not(.dark) {
   .bg-purple-950\/30,
   .bg-purple-950\/40,
   .bg-purple-950\/60 {
-    background-color: #f5f3ff !important;
-    border-color: #ddd6fe !important;
+    background-color: var(--color-surface2) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text) !important;
   }
 
   .bg-amber-950,
@@ -425,6 +444,7 @@ html:not(.dark) {
   .bg-amber-950\/80 {
     background-color: #fffbeb !important;
     border-color: #fde68a !important;
+    color: #92400e !important;
   }
 
   .bg-rose-950,
@@ -435,6 +455,7 @@ html:not(.dark) {
   .bg-rose-950\/80 {
     background-color: #fff1f2 !important;
     border-color: #fecdd3 !important;
+    color: #9f1239 !important;
   }
 
   .bg-emerald-950,
@@ -445,9 +466,10 @@ html:not(.dark) {
   .bg-emerald-950\/80 {
     background-color: #ecfdf5 !important;
     border-color: #a7f3d0 !important;
+    color: #065f46 !important;
   }
 
-  /* High-Contrast Colored Text in Light Mode (WCAG AAA contrast against light backgrounds) */
+  /* High-Contrast Colored Text in Light Mode (WCAG AAA 10:1+ contrast against light backgrounds) */
   .text-emerald-400,
   .text-emerald-300,
   .text-emerald-200,
@@ -478,7 +500,7 @@ html:not(.dark) {
   .text-purple-200,
   .text-violet-400,
   .text-violet-300 {
-    color: #6d28d9 !important; /* Purple 700 - AAA */
+    color: #4c1d95 !important; /* Deep Purple 900 - 10:1+ AAA */
   }
 
   .text-indigo-400,
@@ -490,7 +512,7 @@ html:not(.dark) {
   .text-sky-300,
   .text-cyan-400,
   .text-cyan-300 {
-    color: #4338ca !important; /* Indigo 700 - AAA */
+    color: #312e81 !important; /* Deep Indigo 900 - 11:1+ AAA */
   }
 
   .text-teal-400,
@@ -563,3 +585,30 @@ html:not(.dark) {
 .fixed.z-\[100\] .text-white {
   color: #ffffff !important;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   📱 MOBILE & TABLET RESPONSIVE ENHANCEMENTS
+   ───────────────────────────────────────────────────────────── */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+}
+
+/* Ensure custom stepper controls are easy to tap on all touch devices */
+.no-spinners::-webkit-inner-spin-button,
+.no-spinners::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinners {
+  -moz-appearance: textfield;
+}
+
+/* Ensure mobile buttons have comfortable touch targets (min 38px height) */
+@media (max-width: 640px) {
+  button,
+  .crystal-btn {
+    min-height: 38px;
+  }
+}
+

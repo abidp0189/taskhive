@@ -214,16 +214,16 @@ export const WorkerDashboard = () => {
           </div>
 
           {/* Referral Banner */}
-          <div className="glass-card rounded-3xl p-6 border-indigo-900/50 bg-gradient-to-br from-indigo-950/40 to-purple-950/30">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Users className="h-4 w-4 text-indigo-400" /> Earn 5% Commission
+          <div className="glass-card rounded-3xl p-6 border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <h3 className="text-sm font-bold text-[var(--color-text)] flex items-center gap-2">
+              <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" /> Earn 5% Commission
             </h3>
-            <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+            <p className="text-xs text-[var(--color-text-secondary)] mt-2 leading-relaxed">
               Invite friends to work on Tomar Kaj. You earn a 5% commission on all their approved tasks forever.
             </p>
             <Link
               to="/referral"
-              className="mt-4 block text-center rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 py-2 text-xs font-semibold text-indigo-300 transition-colors"
+              className="mt-4 block text-center rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 py-2.5 px-4 text-xs sm:text-sm font-bold text-white shadow-md transition-all"
             >
               Get My Referral Link →
             </Link>

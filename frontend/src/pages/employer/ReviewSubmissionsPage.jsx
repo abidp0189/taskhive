@@ -174,7 +174,7 @@ export const ReviewSubmissionsPage = () => {
                   ? 'bg-rose-950/40 border-rose-800 text-rose-300'
                   : stats.rejectionRate >= 30
                   ? 'bg-amber-950/40 border-amber-800 text-amber-300'
-                  : 'bg-purple-950/30 border-purple-900/40 text-purple-300'
+                  : 'bg-[var(--color-surface2)] border-[var(--color-border)] text-purple-700 dark:text-purple-300'
               }`}>
                 <span className="block text-[11px] font-medium opacity-80">Rejection Rate (Max 40%)</span>
                 <span className="text-base font-black mt-0.5 block">
@@ -390,11 +390,11 @@ export const ReviewSubmissionsPage = () => {
 
             {/* Action Bar */}
             {selectedSub.status === 'SUBMITTED' && !actionType && (
-              <div className="pt-4 border-t border-gray-800 flex flex-wrap items-center justify-end gap-2">
+              <div className="pt-4 border-t border-[var(--color-border)] dark:border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setActionType('resubmit')}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-950/60 border border-amber-800/80 text-amber-300 hover:bg-amber-900 font-semibold transition-colors"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold transition-colors w-full sm:w-auto cursor-pointer"
                 >
                   <RotateCcw className="h-3.5 w-3.5" /> Request Resubmission
                 </button>
@@ -403,7 +403,7 @@ export const ReviewSubmissionsPage = () => {
                   type="button"
                   disabled={stats?.isEmployerLimitReached || stats?.rejectionRate >= 40}
                   onClick={() => setActionType('reject')}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-300 hover:bg-rose-900 font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer"
                   title={stats?.isEmployerLimitReached ? 'Rejection limit (40%) reached' : 'Reject Work'}
                 >
                   <XCircle className="h-3.5 w-3.5" />
@@ -414,7 +414,7 @@ export const ReviewSubmissionsPage = () => {
                   type="button"
                   disabled={processing}
                   onClick={() => handleApprove(selectedSub.id)}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all hover:scale-105"
+                  className="flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold shadow-lg disabled:opacity-50 transition-all w-full sm:w-auto cursor-pointer"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   {processing ? 'Processing...' : 'Approve & Release Reward'}

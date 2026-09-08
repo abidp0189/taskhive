@@ -94,9 +94,9 @@ export const MyJobsPage = () => {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-gray-950/80 border-b border-gray-800 text-gray-400 uppercase font-semibold">
+          <div className="overflow-x-auto touch-scroll">
+            <table className="w-full min-w-[660px] text-left text-xs">
+              <thead className="bg-[var(--color-surface2)] border-b border-[var(--color-border)] text-[var(--color-text-secondary)] uppercase font-semibold">
                 <tr>
                   <th className="py-3 px-4">Title / Category</th>
                   <th className="py-3 px-4">Worker Slots</th>
@@ -105,14 +105,14 @@ export const MyJobsPage = () => {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/60">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-gray-850/50 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-white max-w-xs truncate">
+                  <tr key={job.id} className="hover:bg-[var(--color-surface2)] transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-[var(--color-text)] max-w-xs truncate">
                       {job.title}
-                      <span className="block text-[11px] text-gray-400 font-normal">{job.category?.name}</span>
+                      <span className="block text-[11px] text-[var(--color-text-secondary)] font-normal">{job.category?.name}</span>
                     </td>
-                    <td className="py-3.5 px-4 text-gray-300">
+                    <td className="py-3.5 px-4 text-[var(--color-text)]">
                       {job.approvedWorkers || 0} approved / {job.totalWorkers} total
                       <div className="w-24 bg-gray-900 rounded-full h-1 mt-1 overflow-hidden">
                         <div
@@ -121,7 +121,7 @@ export const MyJobsPage = () => {
                         />
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 font-bold text-emerald-400">
+                    <td className="py-3.5 px-4 font-bold text-emerald-500 dark:text-emerald-400">
                       ${parseFloat(job.rewardPerWorker).toFixed(2)}
                     </td>
                     <td className="py-3.5 px-4">
@@ -138,49 +138,51 @@ export const MyJobsPage = () => {
                           </span>
                         )}
                         {job.scheduledDeletionAt && (
-                          <span className="text-[9px] text-gray-500">
+                          <span className="text-[9px] text-[var(--color-text-tertiary)]">
                             Auto-delete: {new Date(job.scheduledDeletionAt).toLocaleDateString()}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right space-x-2">
-                      <Link
-                        to={`/employer/jobs/${job.id}/submissions`}
-                        className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow transition-colors"
-                      >
-                        Submissions ({job._count?.assignments || 0})
-                      </Link>
-
-                      {job.status === 'ACTIVE' && (
-                        <button
-                          onClick={() => handleAction(job.id, 'pause')}
-                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-amber-400 hover:bg-gray-800"
-                          title="Pause Job"
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="inline-flex items-center justify-end gap-1.5 whitespace-nowrap">
+                        <Link
+                          to={`/employer/jobs/${job.id}/submissions`}
+                          className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold shadow-sm transition-all text-xs inline-flex items-center"
                         >
-                          <Pause className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                          Submissions ({job._count?.assignments || 0})
+                        </Link>
 
-                      {job.status === 'PAUSED' && job.pausedBy !== 'ADMIN' && (
-                        <button
-                          onClick={() => handleAction(job.id, 'resume')}
-                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-emerald-400 hover:bg-gray-800"
-                          title="Resume Job"
-                        >
-                          <Play className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                        {job.status === 'ACTIVE' && (
+                          <button
+                            onClick={() => handleAction(job.id, 'pause')}
+                            className="p-2 rounded-lg bg-[var(--color-surface2)] border border-[var(--color-border)] text-amber-500 hover:bg-[var(--color-surface3)] active:scale-95 cursor-pointer"
+                            title="Pause Job"
+                          >
+                            <Pause className="h-4 w-4" />
+                          </button>
+                        )}
 
-                      {!job.deletedAt && (
-                        <button
-                          onClick={() => handleDeleteJob(job.id, job.title)}
-                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-rose-400 hover:bg-rose-950/50 hover:border-rose-800 transition-colors"
-                          title="Delete Campaign (Refunds budget & schedules 7-day data cleanup)"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                        {job.status === 'PAUSED' && job.pausedBy !== 'ADMIN' && (
+                          <button
+                            onClick={() => handleAction(job.id, 'resume')}
+                            className="p-2 rounded-lg bg-[var(--color-surface2)] border border-[var(--color-border)] text-emerald-500 hover:bg-[var(--color-surface3)] active:scale-95 cursor-pointer"
+                            title="Resume Job"
+                          >
+                            <Play className="h-4 w-4" />
+                          </button>
+                        )}
+
+                        {!job.deletedAt && (
+                          <button
+                            onClick={() => handleDeleteJob(job.id, job.title)}
+                            className="p-2 rounded-lg bg-[var(--color-surface2)] border border-[var(--color-border)] text-rose-500 hover:bg-rose-500/10 active:scale-95 cursor-pointer"
+                            title="Delete Campaign (Refunds budget & schedules 7-day data cleanup)"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
