@@ -204,25 +204,121 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   AUTOMATIC LIGHT THEME CONTRAST & VISIBILITY OVERRIDES
-   Ensures 100% crystal-clear readability for all text & cards
+   🌙 DARK THEME SPECIFICS
+   Ensures perfect contrast, readable options, inputs & pickers
    ───────────────────────────────────────────────────────────── */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
 
-/* When not in dark mode (Default Light Theme) */
+.dark select option {
+  background-color: #0f0d1a !important;
+  color: #f5edff !important;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.dark ::placeholder,
+.dark .placeholder-gray-500,
+.dark .placeholder-gray-400 {
+  color: var(--color-text-tertiary) !important;
+  opacity: 0.8 !important;
+}
+
+.dark table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark [role="dialog"],
+.dark .modal-content {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ☀️ AUTOMATIC LIGHT THEME CONTRAST & VISIBILITY OVERRIDES
+   Ensures 100% crystal-clear readability for all text, cards,
+   buttons, badges, inputs and hover states across the app
+   ───────────────────────────────────────────────────────────── */
 html:not(.dark) {
-  /* Text headings and prominent content */
-  h1:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]),
-  h2:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]),
-  h3:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]),
-  h4:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]) {
+  /* Headings inherit or adapt to theme primary text */
+  h1:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-purple-"]):not([class*="text-teal-"]),
+  h2:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-purple-"]):not([class*="text-teal-"]),
+  h3:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-purple-"]):not([class*="text-teal-"]),
+  h4:not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-indigo-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-purple-"]):not([class*="text-teal-"]) {
     color: var(--color-text);
   }
 
-  /* Map generic Tailwind dark utility classes to theme tokens */
-  .text-white:not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-emerald-"]):not([class*="bg-teal-"]):not([class*="bg-purple-"]):not([class*="bg-blue-"]):not([class*="from-indigo-"]):not([class*="from-emerald-"]):not([class*="bg-red-"]):not(button.bg-indigo-600):not(a.bg-indigo-600) {
+  /* Default text-white on light cards converts to dark theme text */
+  .text-white {
     color: var(--color-text);
   }
 
+  /* BUT any text inside colored action buttons, links, or badges MUST ALWAYS remain white */
+  button[class*="bg-purple-"],
+  button[class*="bg-indigo-"],
+  button[class*="bg-emerald-"],
+  button[class*="bg-rose-"],
+  button[class*="bg-teal-"],
+  button[class*="bg-blue-"],
+  button[class*="bg-sky-"],
+  button[class*="bg-red-"],
+  button[class*="from-"],
+  a[class*="bg-purple-"],
+  a[class*="bg-indigo-"],
+  a[class*="bg-emerald-"],
+  a[class*="bg-rose-"],
+  a[class*="bg-teal-"],
+  a[class*="bg-blue-"],
+  a[class*="bg-sky-"],
+  a[class*="from-"],
+  .btn-theme-primary,
+  [class*="bg-purple-600"],
+  [class*="bg-indigo-600"],
+  [class*="bg-emerald-600"],
+  [class*="bg-rose-600"],
+  [class*="bg-teal-600"],
+  [class*="bg-blue-600"],
+  [class*="from-purple-"],
+  [class*="from-indigo-"],
+  [class*="from-emerald-"],
+  [class*="from-rose-"],
+  [class*="from-teal-"] {
+    color: #ffffff !important;
+  }
+
+  /* All child text & icons inside colored action buttons/links must stay white */
+  button[class*="bg-purple-"] *,
+  button[class*="bg-indigo-"] *,
+  button[class*="bg-emerald-"] *,
+  button[class*="bg-rose-"] *,
+  button[class*="bg-teal-"] *,
+  button[class*="bg-blue-"] *,
+  button[class*="from-"] *,
+  a[class*="bg-purple-"] *,
+  a[class*="bg-indigo-"] *,
+  a[class*="bg-emerald-"] *,
+  a[class*="bg-rose-"] *,
+  a[class*="bg-teal-"] *,
+  a[class*="bg-blue-"] *,
+  a[class*="from-"] *,
+  [class*="from-purple-"] *,
+  [class*="from-indigo-"] *,
+  [class*="from-emerald-"] *,
+  [class*="from-rose-"] *,
+  [class*="from-teal-"] * {
+    color: #ffffff !important;
+  }
+
+  /* Gray text mappings for Light Theme */
   .text-gray-100,
   .text-gray-200,
   .text-gray-300 {
@@ -238,9 +334,26 @@ html:not(.dark) {
     color: var(--color-text-tertiary) !important;
   }
 
-  /* Card and Panel Backgrounds */
+  /* Fix the hover:text-white bug: hovering over links/tabs highlights in dark text instead of vanishing into white */
+  .hover\:text-white:hover:not([class*="bg-purple-"]):not([class*="bg-indigo-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="from-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]) {
+    color: var(--color-text) !important;
+  }
+
+  /* Fix dark hover background flashes in light mode */
+  .hover\:bg-gray-800:hover,
+  .hover\:bg-gray-800\/40:hover,
+  .hover\:bg-gray-800\/50:hover,
+  .hover\:bg-gray-800\/60:hover,
+  .hover\:bg-gray-850\/50:hover,
+  .hover\:bg-gray-700:hover,
+  .hover\:bg-gray-900:hover {
+    background-color: var(--color-surface2) !important;
+  }
+
+  /* Map generic Tailwind dark card backgrounds to light theme surfaces */
   .bg-gray-950,
   .bg-gray-900,
+  .bg-gray-950\/40,
   .bg-gray-950\/60,
   .bg-gray-950\/80,
   .bg-gray-950\/90,
@@ -253,6 +366,7 @@ html:not(.dark) {
   }
 
   .bg-gray-800,
+  .bg-gray-800\/40,
   .bg-gray-800\/50,
   .bg-gray-800\/60,
   .bg-gray-800\/80,
@@ -263,6 +377,7 @@ html:not(.dark) {
   /* Borders & Dividers */
   .border-gray-900,
   .border-gray-800,
+  .border-gray-800\/60,
   .border-gray-800\/80,
   .border-gray-700,
   .border-gray-700\/50 {
@@ -271,17 +386,130 @@ html:not(.dark) {
 
   .divide-gray-900,
   .divide-gray-800,
+  .divide-gray-800\/60,
   .divide-gray-700 {
     border-color: var(--color-border) !important;
   }
 
-  /* Inputs, Textareas, Selects */
+  /* Progress bar tracks in Light Mode */
+  .rounded-full.bg-gray-900,
+  .rounded-full.bg-gray-800 {
+    background-color: var(--color-surface3) !important;
+  }
+
+  /* Accent Colored Containers in Light Mode (clean, readable light pastels) */
+  .bg-indigo-950,
+  .bg-indigo-950\/20,
+  .bg-indigo-950\/30,
+  .bg-indigo-950\/40,
+  .bg-indigo-950\/60,
+  .bg-indigo-950\/80 {
+    background-color: #eef2ff !important;
+    border-color: #c7d2fe !important;
+  }
+
+  .bg-purple-950,
+  .bg-purple-950\/20,
+  .bg-purple-950\/30,
+  .bg-purple-950\/40,
+  .bg-purple-950\/60 {
+    background-color: #f5f3ff !important;
+    border-color: #ddd6fe !important;
+  }
+
+  .bg-amber-950,
+  .bg-amber-950\/20,
+  .bg-amber-950\/30,
+  .bg-amber-950\/40,
+  .bg-amber-950\/60,
+  .bg-amber-950\/80 {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+  }
+
+  .bg-rose-950,
+  .bg-rose-950\/20,
+  .bg-rose-950\/30,
+  .bg-rose-950\/40,
+  .bg-rose-950\/60,
+  .bg-rose-950\/80 {
+    background-color: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+  }
+
+  .bg-emerald-950,
+  .bg-emerald-950\/20,
+  .bg-emerald-950\/30,
+  .bg-emerald-950\/40,
+  .bg-emerald-950\/60,
+  .bg-emerald-950\/80 {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+  }
+
+  /* High-Contrast Colored Text in Light Mode (WCAG AAA contrast against light backgrounds) */
+  .text-emerald-400,
+  .text-emerald-300,
+  .text-emerald-200,
+  .text-green-400,
+  .text-green-300 {
+    color: #047857 !important; /* Emerald 700 - AAA */
+  }
+
+  .text-amber-400,
+  .text-amber-300,
+  .text-amber-200,
+  .text-yellow-400,
+  .text-yellow-300,
+  .text-orange-400 {
+    color: #b45309 !important; /* Amber 700 - AAA */
+  }
+
+  .text-rose-400,
+  .text-rose-300,
+  .text-rose-200,
+  .text-red-400,
+  .text-red-300 {
+    color: #be123c !important; /* Rose 700 - AAA */
+  }
+
+  .text-purple-400,
+  .text-purple-300,
+  .text-purple-200,
+  .text-violet-400,
+  .text-violet-300 {
+    color: #6d28d9 !important; /* Purple 700 - AAA */
+  }
+
+  .text-indigo-400,
+  .text-indigo-300,
+  .text-indigo-200,
+  .text-blue-400,
+  .text-blue-300,
+  .text-sky-400,
+  .text-sky-300,
+  .text-cyan-400,
+  .text-cyan-300 {
+    color: #4338ca !important; /* Indigo 700 - AAA */
+  }
+
+  .text-teal-400,
+  .text-teal-300 {
+    color: #0f766e !important; /* Teal 700 - AAA */
+  }
+
+  /* Form Elements in Light Mode */
   input:not([type="checkbox"]):not([type="radio"]),
   textarea,
   select {
     background-color: var(--color-surface) !important;
     color: var(--color-text) !important;
     border-color: var(--color-border) !important;
+  }
+
+  select option {
+    background-color: var(--color-surface) !important;
+    color: var(--color-text) !important;
   }
 
   input:focus,
@@ -291,7 +519,6 @@ html:not(.dark) {
     outline: none;
   }
 
-  /* Input Placeholders */
   ::placeholder,
   .placeholder-gray-500,
   .placeholder-gray-400 {
@@ -299,7 +526,7 @@ html:not(.dark) {
     opacity: 0.9 !important;
   }
 
-  /* Tables & Headers */
+  /* Tables in Light Mode */
   table th {
     color: var(--color-text-secondary) !important;
     background-color: var(--color-surface2) !important;
@@ -315,11 +542,24 @@ html:not(.dark) {
     background-color: var(--color-surface2) !important;
   }
 
-  /* Modals & Dropdowns */
+  /* Modals & Dropdowns in Light Mode */
   .modal-content,
   [role="dialog"] {
     background-color: var(--color-surface) !important;
     border-color: var(--color-border) !important;
     color: var(--color-text) !important;
   }
+}
+
+/* Ensure Image Lightbox stays cinema-dark in both themes */
+.fixed.z-\[100\] .bg-gray-950,
+.fixed.z-\[100\] .bg-gray-900\/90 {
+  background-color: #080610 !important;
+  border-color: #2a2540 !important;
+  color: #ffffff !important;
+}
+
+.fixed.z-\[100\] .text-gray-200,
+.fixed.z-\[100\] .text-white {
+  color: #ffffff !important;
 }
