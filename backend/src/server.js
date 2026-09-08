@@ -1,18 +1,20 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const app = require('./app');
-const { cleanupExpiredProofs } = require('./utils/cleanup');
+const { cleanupExpiredProofs, cleanupExpiredJobs } = require('./utils/cleanup');
 
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT} [${process.env.NODE_ENV || 'development'}]`);
   
-  // Run 30-day automatic proof cleanup on startup
+  // Run automatic cleanups on startup
   cleanupExpiredProofs();
+  cleanupExpiredJobs();
   
-  // Schedule cleanup to run every 6 hours
+  // Schedule cleanups (proofs every 6 hours, job retention every hour)
   setInterval(cleanupExpiredProofs, 6 * 60 * 60 * 1000);
+  setInterval(cleanupExpiredJobs, 60 * 60 * 1000);
 });
 
 server.on('error', (err) => {

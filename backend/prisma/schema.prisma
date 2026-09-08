@@ -320,6 +320,7 @@ model Job {
   proofRequirements     String
   proofTypes            String        @default("TEXT")  // comma-separated ProofType values
   requiresScreenshot    Boolean       @default(false)
+  screenshotQuantity    Int           @default(1)
   targetUrl             String?
   rewardPerWorker       Decimal
   totalWorkers          Int
@@ -358,6 +359,13 @@ model Job {
   maxResubmissions   Int           @default(3)
   startAt            DateTime?
   endAt              DateTime?
+
+  // Deletion & Pause lifecycle
+  deletedAt             DateTime?
+  scheduledDeletionAt   DateTime?
+  pausedAt              DateTime?
+  pausedBy              String?
+
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -373,6 +381,8 @@ model Job {
   @@index([visibility])
   @@index([boostExpiresAt])
   @@index([scheduledAt])
+  @@index([scheduledDeletionAt])
+  @@index([deletedAt])
 }
 
 model JobTarget {

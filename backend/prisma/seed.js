@@ -26,10 +26,13 @@ async function main() {
     { key: 'referral_deposit_commission_percent', value: '5',   type: 'number', label: 'Referral Deposit Commission (%)',        group: 'referral' },
     // Upload
     { key: 'max_proof_size_mb',                 value: '10',    type: 'number', label: 'Max Proof Upload Size (MB)',             group: 'upload' },
-    // Tasks
+    // Tasks & Moderation
     { key: 'task_expiry_hours',                 value: '48',    type: 'number', label: 'Default Task Expiry (hours)',            group: 'tasks' },
     { key: 'max_resubmissions',                 value: '3',     type: 'number', label: 'Max Resubmissions',                     group: 'tasks' },
     { key: 'default_estimated_days',            value: '3',     type: 'number', label: 'Default Estimated Completion Days',     group: 'tasks' },
+    { key: 'employer_rejection_limit_percent',  value: '40',    type: 'number', label: 'Max Employer Rejection Limit (%)',       group: 'moderation' },
+    { key: 'platform_rejection_limit_percent',  value: '50',    type: 'number', label: 'Platform Max Rejection Limit (%)',       group: 'moderation' },
+    { key: 'job_deletion_retention_days',       value: '7',     type: 'number', label: 'Job Deletion Retention Period (Days)',   group: 'general' },
     // General
     { key: 'site_name',                         value: 'Tomar Kaj', type: 'string', label: 'Site Name',                         group: 'general' },
     { key: 'site_description',                  value: 'Earn money completing micro tasks online with Tomar Kaj', type: 'string', label: 'Site Description', group: 'general' },

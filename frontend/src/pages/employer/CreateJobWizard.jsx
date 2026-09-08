@@ -55,10 +55,13 @@ export const CreateJobWizard = () => {
     targetUrl: '',
     proofTypes: 'TEXT,IMAGE',
     requiresScreenshot: true,
+    screenshotQuantity: 1,
     // Step 4: Budget & Settings
     totalWorkers: 50,
     rewardPerWorker: 0.03,
     estimatedDays: 3,
+    durationMode: 'DAYS', // 'DAYS' | 'DATE'
+    endAt: '',
     boostDuration: 0,
     publishMode: 'NOW', // 'NOW' | 'SCHEDULE'
     scheduledAt: '',
@@ -223,10 +226,12 @@ export const CreateJobWizard = () => {
         proofRequirements: formData.proofRequirements,
         proofTypes: formData.proofTypes,
         requiresScreenshot: formData.requiresScreenshot,
+        screenshotQuantity: formData.requiresScreenshot ? Math.max(1, parseInt(formData.screenshotQuantity) || 1) : 0,
         targetUrl: formData.targetUrl || null,
         rewardPerWorker: reward,
         totalWorkers: workers,
         estimatedDays: parseInt(formData.estimatedDays) || 3,
+        endAt: formData.durationMode === 'DATE' && formData.endAt ? formData.endAt : null,
         boostDuration: parseInt(formData.boostDuration) || 0,
         scheduledAt: formData.publishMode === 'SCHEDULE' ? formData.scheduledAt : null,
         taskExpiryHours: formData.taskExpiryHours,
@@ -481,23 +486,54 @@ export const CreateJobWizard = () => {
               />
             </div>
 
-            {/* Screenshot Proof Toggle */}
-            <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-purple-950/60 border border-purple-800 text-purple-400 flex items-center justify-center">
-                  <Camera className="h-5 w-5" />
+            {/* Screenshot Proof Toggle & Quantity */}
+            <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-purple-950/60 border border-purple-800 text-purple-400 flex items-center justify-center">
+                    <Camera className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Require Screenshot Proof Image</h4>
+                    <p className="text-[11px] text-gray-400">Adds 3% proof verification fee to campaign escrow</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Require Screenshot Proof Image</h4>
-                  <p className="text-[11px] text-gray-400">Adds 3% proof verification fee to campaign escrow</p>
-                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.requiresScreenshot}
+                  onChange={(e) => setFormData({ ...formData, requiresScreenshot: e.target.checked })}
+                  className="h-5 w-5 rounded accent-purple-600 cursor-pointer"
+                />
               </div>
-              <input
-                type="checkbox"
-                checked={formData.requiresScreenshot}
-                onChange={(e) => setFormData({ ...formData, requiresScreenshot: e.target.checked })}
-                className="h-5 w-5 rounded accent-purple-600 cursor-pointer"
-              />
+
+              {formData.requiresScreenshot && (
+                <div className="pt-3 border-t border-gray-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-purple-950/20 p-3 rounded-xl border border-purple-900/30">
+                  <div>
+                    <label className="block text-xs font-semibold text-white">
+                      Required Number of Screenshots
+                    </label>
+                    <p className="text-[11px] text-gray-400">
+                      Workers must upload exactly or at least this many screenshots to submit proof
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={formData.screenshotQuantity}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          screenshotQuantity: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)),
+                        })
+                      }
+                      className="w-20 rounded-xl bg-gray-900 border border-purple-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:border-purple-500 focus:outline-none"
+                    />
+                    <span className="text-xs text-purple-300 font-medium">screenshot(s)</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -534,16 +570,56 @@ export const CreateJobWizard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1.5">Estimated Completion Days</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={formData.estimatedDays}
-                  onChange={(e) => setFormData({ ...formData, estimatedDays: Math.max(1, parseInt(e.target.value) || 3) })}
-                  className="w-full rounded-xl bg-gray-950 border border-gray-800 px-4 py-2.5 text-xs sm:text-sm text-white focus:border-purple-500 focus:outline-none"
-                />
-                <span className="text-[10px] text-gray-500">Default: 3 days</span>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">Campaign Duration / Deadline</label>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, durationMode: 'DAYS' })}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors ${
+                      formData.durationMode === 'DAYS'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Duration (Days)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, durationMode: 'DATE' })}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors ${
+                      formData.durationMode === 'DATE'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Exact Deadline
+                  </button>
+                </div>
+
+                {formData.durationMode === 'DAYS' ? (
+                  <div>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.estimatedDays}
+                      onChange={(e) => setFormData({ ...formData, estimatedDays: Math.max(1, parseInt(e.target.value) || 1) })}
+                      placeholder="e.g. 3, 7, 14, 30, 90..."
+                      className="w-full rounded-xl bg-gray-950 border border-gray-800 px-4 py-2.5 text-xs sm:text-sm text-white focus:border-purple-500 focus:outline-none"
+                    />
+                    <span className="text-[10px] text-gray-500">Flexible: Enter any duration (days) without restriction</span>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="datetime-local"
+                      value={formData.endAt}
+                      onChange={(e) => setFormData({ ...formData, endAt: e.target.value })}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-full rounded-xl bg-gray-950 border border-gray-800 px-4 py-2.5 text-xs sm:text-sm text-white focus:border-purple-500 focus:outline-none"
+                    />
+                    <span className="text-[10px] text-gray-500">Campaign will stop receiving workers on this deadline</span>
+                  </div>
+                )}
               </div>
 
               <div>

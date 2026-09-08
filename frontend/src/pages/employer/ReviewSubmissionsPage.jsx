@@ -11,7 +11,9 @@ import {
   User, 
   Clock, 
   ShieldCheck, 
-  ExternalLink 
+  ExternalLink,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { ImageLightboxModal } from '../../components/common/ImageLightboxModal';
 import api, { getFileUrl } from '../../services/api';
@@ -21,6 +23,7 @@ export const ReviewSubmissionsPage = () => {
   const { id: jobId } = useParams();
   const [submissions, setSubmissions] = useState([]);
   const [job, setJob] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('SUBMITTED');
 
@@ -64,6 +67,9 @@ export const ReviewSubmissionsPage = () => {
       }
       if (subsRes.status === 'fulfilled' && subsRes.value.data?.success) {
         setSubmissions(subsRes.value.data.data);
+        if (subsRes.value.data.pagination?.stats) {
+          setStats(subsRes.value.data.pagination.stats);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -146,6 +152,63 @@ export const ReviewSubmissionsPage = () => {
             </p>
           </div>
         </div>
+
+        {/* Rejection Limits & Statistics Banner */}
+        {stats && (
+          <div className="mt-6 pt-6 border-t border-gray-800 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-gray-950/60 border border-gray-800">
+                <span className="text-gray-400 block text-[11px]">Total Submissions</span>
+                <span className="text-base font-bold text-white mt-0.5 block">{stats.totalSubmissions}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-900/40">
+                <span className="text-emerald-400 block text-[11px]">Approved Submissions</span>
+                <span className="text-base font-bold text-emerald-300 mt-0.5 block">{stats.approvedCount}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-900/40">
+                <span className="text-rose-400 block text-[11px]">Rejected Submissions</span>
+                <span className="text-base font-bold text-rose-300 mt-0.5 block">{stats.rejectedCount}</span>
+              </div>
+              <div className={`p-3 rounded-xl border ${
+                stats.rejectionRate >= 40
+                  ? 'bg-rose-950/40 border-rose-800 text-rose-300'
+                  : stats.rejectionRate >= 30
+                  ? 'bg-amber-950/40 border-amber-800 text-amber-300'
+                  : 'bg-purple-950/30 border-purple-900/40 text-purple-300'
+              }`}>
+                <span className="block text-[11px] font-medium opacity-80">Rejection Rate (Max 40%)</span>
+                <span className="text-base font-black mt-0.5 block">
+                  {stats.rejectionRate}%
+                  {stats.rejectionRate >= 40 && ' (Limit Reached)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Threshold Warnings */}
+            {stats.rejectionRate >= 40 ? (
+              <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-800/80 flex items-start gap-3 text-xs text-rose-200">
+                <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-white">Rejection Limit Reached (40%)</h4>
+                  <p className="mt-0.5 text-rose-300 leading-relaxed">
+                    To maintain platform fairness for workers, an employer cannot reject more than 40% of submissions for a job.
+                    Further rejections are <strong>locked</strong>. Please approve valid submissions or request resubmission if corrections are needed.
+                  </p>
+                </div>
+              </div>
+            ) : stats.rejectionRate >= 30 ? (
+              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/80 flex items-start gap-3 text-xs text-amber-200">
+                <AlertCircle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-white">Rejection Limit Warning</h4>
+                  <p className="mt-0.5 text-amber-300">
+                    Your rejection rate is at <strong>{stats.rejectionRate}%</strong>. The maximum allowed rejection threshold is <strong>40%</strong>. Please review carefully before rejecting further work.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -338,10 +401,13 @@ export const ReviewSubmissionsPage = () => {
 
                 <button
                   type="button"
+                  disabled={stats?.isEmployerLimitReached || stats?.rejectionRate >= 40}
                   onClick={() => setActionType('reject')}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-300 hover:bg-rose-900 font-semibold transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-300 hover:bg-rose-900 font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={stats?.isEmployerLimitReached ? 'Rejection limit (40%) reached' : 'Reject Work'}
                 >
-                  <XCircle className="h-3.5 w-3.5" /> Reject Work
+                  <XCircle className="h-3.5 w-3.5" />
+                  {stats?.isEmployerLimitReached || stats?.rejectionRate >= 40 ? 'Rejection Locked (40% Limit)' : 'Reject Work'}
                 </button>
 
                 <button

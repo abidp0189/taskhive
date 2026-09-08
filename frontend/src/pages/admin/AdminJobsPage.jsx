@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '../../components/common/Badge';
-import { Layers, CheckCircle2, XCircle, Pause, Play } from 'lucide-react';
+import { Layers, CheckCircle2, XCircle, Pause, Play, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -38,6 +38,50 @@ export const AdminJobsPage = () => {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update job');
+    }
+  };
+
+  const handleAdminPause = async (jobId, title) => {
+    const reason = prompt(`Enter moderation reason for pausing "${title}":`);
+    if (reason === null) return; // user cancelled
+
+    try {
+      const res = await api.post(`/admin/jobs/${jobId}/pause`, { reason });
+      if (res.data?.success) {
+        toast.success('Job paused by admin.');
+        fetchJobs();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to pause job');
+    }
+  };
+
+  const handleAdminResume = async (jobId) => {
+    try {
+      const res = await api.post(`/admin/jobs/${jobId}/resume`);
+      if (res.data?.success) {
+        toast.success('Job resumed by admin.');
+        fetchJobs();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to resume job');
+    }
+  };
+
+  const handleAdminDelete = async (jobId, title) => {
+    const reason = prompt(
+      `Are you sure you want to remove "${title}"?\n\nUnused escrow funds will be refunded to the employer, and this job will enter a 7-day data retention cycle before permanent purge.\n\nEnter reason for removal (optional):`
+    );
+    if (reason === null) return; // user cancelled
+
+    try {
+      const res = await api.delete(`/admin/jobs/${jobId}`, { data: { reason } });
+      if (res.data?.success) {
+        toast.success(res.data.message || 'Job removed and scheduled for 7-day deletion.');
+        fetchJobs();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete job');
     }
   };
 
@@ -99,7 +143,24 @@ export const AdminJobsPage = () => {
                     <td className="py-3.5 px-4 text-gray-300">{job.totalWorkers} workers</td>
                     <td className="py-3.5 px-4 font-bold text-emerald-400">${parseFloat(job.rewardPerWorker).toFixed(2)}</td>
                     <td className="py-3.5 px-4">
-                      <Badge>{job.status}</Badge>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge>{job.status}</Badge>
+                        {job.pausedBy === 'ADMIN' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300 font-semibold">
+                            Admin Paused
+                          </span>
+                        )}
+                        {job.deletedAt && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300 font-medium">
+                            Scheduled Deletion
+                          </span>
+                        )}
+                        {job.scheduledDeletionAt && (
+                          <span className="text-[9px] text-gray-500">
+                            Auto-delete: {new Date(job.scheduledDeletionAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4 text-right space-x-2">
                       {job.status === 'PENDING_REVIEW' && (
@@ -120,18 +181,29 @@ export const AdminJobsPage = () => {
                       )}
                       {job.status === 'ACTIVE' && (
                         <button
-                          onClick={() => handleUpdateStatus(job.id, 'PAUSED')}
-                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-amber-400 hover:bg-gray-800"
+                          onClick={() => handleAdminPause(job.id, job.title)}
+                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-amber-400 hover:bg-gray-800 transition-colors"
+                          title="Pause Job (Admin moderation)"
                         >
-                          Pause
+                          <Pause className="h-3.5 w-3.5 inline mr-1" /> Pause
                         </button>
                       )}
                       {job.status === 'PAUSED' && (
                         <button
-                          onClick={() => handleUpdateStatus(job.id, 'ACTIVE')}
-                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-emerald-400 hover:bg-gray-800"
+                          onClick={() => handleAdminResume(job.id)}
+                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-emerald-400 hover:bg-gray-800 transition-colors"
+                          title="Resume Job"
                         >
-                          Resume
+                          <Play className="h-3.5 w-3.5 inline mr-1" /> Resume
+                        </button>
+                      )}
+                      {!job.deletedAt && (
+                        <button
+                          onClick={() => handleAdminDelete(job.id, job.title)}
+                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-rose-400 hover:bg-rose-950/50 hover:border-rose-800 transition-colors"
+                          title="Remove Job (Refunds employer & schedules 7-day permanent deletion)"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </td>

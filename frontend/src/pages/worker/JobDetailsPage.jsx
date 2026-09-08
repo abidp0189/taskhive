@@ -14,7 +14,8 @@ import {
   ExternalLink, 
   ShieldCheck, 
   ArrowLeft,
-  X
+  X,
+  Camera
 } from 'lucide-react';
 import { ImageLightboxModal } from '../../components/common/ImageLightboxModal';
 import api, { getFileUrl } from '../../services/api';
@@ -132,6 +133,16 @@ export const JobDetailsPage = () => {
 
     if (!textProof && !urlProof && selectedFiles.length === 0) {
       toast.error('Please provide at least one proof item (text, URL, or screenshot)');
+      return;
+    }
+
+    const requiredScreenshots = job?.requiresScreenshot ? (job.screenshotQuantity || 1) : 0;
+    const uploadedImagesCount = selectedFiles.filter((f) => f.type.startsWith('image/')).length;
+
+    if (requiredScreenshots > 0 && uploadedImagesCount < requiredScreenshots) {
+      toast.error(
+        `This job requires at least ${requiredScreenshots} screenshot(s). You have uploaded ${uploadedImagesCount}. Please upload all required screenshots before submitting.`
+      );
       return;
     }
 
@@ -282,7 +293,11 @@ export const JobDetailsPage = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80 text-xs">
           <div>
             <span className="text-gray-500 block">Required Proof</span>
-            <span className="font-semibold text-gray-300">{job.proofTypes || 'Screenshot & Text'}</span>
+            <span className="font-semibold text-gray-300">
+              {job.requiresScreenshot
+                ? `${job.screenshotQuantity || 1} Screenshot(s) ${job.proofTypes ? `& ${job.proofTypes.replace('IMAGE,', '').replace(',IMAGE', '')}` : ''}`
+                : job.proofTypes || 'Text Proof'}
+            </span>
           </div>
           <div>
             <span className="text-gray-500 block">Time Limit</span>
@@ -328,10 +343,34 @@ export const JobDetailsPage = () => {
           <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-900/40 text-xs sm:text-sm text-purple-200 leading-relaxed">
             {job.proofRequirements}
           </div>
+
+          {job.requiresScreenshot && (
+            <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/50 flex items-center gap-3">
+              <Camera className="h-5 w-5 text-indigo-400 shrink-0" />
+              <div className="text-xs">
+                <span className="font-bold text-white">Screenshot Quantity Requirement:</span>
+                <span className="text-indigo-200 ml-1.5">
+                  This employer requires exactly or at least <strong>{job.screenshotQuantity || 1} screenshot(s)</strong> as evidence.
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action / State Area */}
-        {!task ? (
+        {job.status === 'PAUSED' || job.deletedAt ? (
+          <div className="pt-4 border-t border-gray-800">
+            <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800 text-amber-200 text-xs flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
+              <div>
+                <h4 className="font-bold text-white">Job Currently Paused</h4>
+                <p className="mt-0.5 text-amber-300">
+                  This campaign is currently paused and is not accepting task starts or new proof submissions.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : !task ? (
           <div className="pt-4 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-gray-400">
               Clicking "Start Task" will reserve your worker slot for 48 hours.
@@ -397,10 +436,36 @@ export const JobDetailsPage = () => {
               </div>
 
               {/* Screenshot / File upload */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                  Upload Screenshot Evidence (Images/PDF, max 10MB)
-                </label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    Upload Screenshot Evidence (Images/PDF, max 10MB)
+                  </label>
+                  {job.requiresScreenshot && (
+                    <span className="text-xs text-indigo-400 font-bold">
+                      Requirement: {job.screenshotQuantity || 1} screenshot(s)
+                    </span>
+                  )}
+                </div>
+
+                {job.requiresScreenshot && (
+                  <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                    selectedFiles.filter((f) => f.type.startsWith('image/')).length >= (job.screenshotQuantity || 1)
+                      ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-300'
+                      : 'bg-amber-950/40 border-amber-800/80 text-amber-300'
+                  }`}>
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Camera className="h-4 w-4" /> Screenshot Proof Progress:
+                    </span>
+                    <span className="font-bold">
+                      {selectedFiles.filter((f) => f.type.startsWith('image/')).length} / {job.screenshotQuantity || 1} selected
+                      {selectedFiles.filter((f) => f.type.startsWith('image/')).length >= (job.screenshotQuantity || 1)
+                        ? ' ✓ Completed'
+                        : ' (Required)'}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-800 hover:border-indigo-500/50 rounded-2xl bg-gray-950/40 transition-colors cursor-pointer relative">
                   <input
                     type="file"
@@ -435,10 +500,19 @@ export const JobDetailsPage = () => {
 
               <button
                 type="submit"
-                disabled={submitting}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all hover:scale-105"
+                disabled={
+                  submitting ||
+                  (job.requiresScreenshot &&
+                    selectedFiles.filter((f) => f.type.startsWith('image/')).length < (job.screenshotQuantity || 1))
+                }
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
               >
-                {submitting ? 'Uploading Proof...' : 'Submit Proof for Review'}
+                {submitting
+                  ? 'Uploading Proof...'
+                  : job.requiresScreenshot &&
+                    selectedFiles.filter((f) => f.type.startsWith('image/')).length < (job.screenshotQuantity || 1)
+                  ? `Upload ${job.screenshotQuantity || 1} Screenshot(s) to Submit`
+                  : 'Submit Proof for Review'}
               </button>
             </form>
           </div>

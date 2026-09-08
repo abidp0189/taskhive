@@ -85,6 +85,15 @@ const submitTask = asyncHandler(async (req, res) => {
     return badRequest(res, `Cannot submit task in status: ${assignment.status}`);
   }
 
+  // Block submission if job is paused, cancelled, soft-deleted or expired
+  const jobStatus = assignment.job.status;
+  if (['PAUSED', 'CANCELLED', 'EXPIRED', 'REJECTED'].includes(jobStatus)) {
+    return badRequest(res, `This job is currently ${jobStatus.toLowerCase()} and not accepting new submissions.`);
+  }
+  if (assignment.job.deletedAt) {
+    return badRequest(res, 'This job has been removed and is no longer accepting submissions.');
+  }
+
   // Check expiry
   if (assignment.expiresAt && new Date() > assignment.expiresAt) {
     await prisma.taskAssignment.update({ where: { id }, data: { status: 'EXPIRED' } });
@@ -155,6 +164,20 @@ const submitTask = asyncHandler(async (req, res) => {
     return badRequest(res, 'At least one proof is required');
   }
 
+  // Validate screenshot quantity requirement
+  const job = assignment.job;
+  if (job.requiresScreenshot && job.screenshotQuantity > 0) {
+    const imageProofCount = proofData.filter(
+      (p) => p.type === 'IMAGE' || (p.mimeType && p.mimeType.startsWith('image/'))
+    ).length;
+    if (imageProofCount < job.screenshotQuantity) {
+      return badRequest(
+        res,
+        `This job requires at least ${job.screenshotQuantity} screenshot(s). You submitted ${imageProofCount}. Please upload the required number of screenshots.`
+      );
+    }
+  }
+
   // Delete old proofs if resubmitting
   if (assignment.status === 'RESUBMIT_REQUIRED') {
     await prisma.submissionProof.deleteMany({ where: { assignmentId: id } });
@@ -202,6 +225,19 @@ const getSubmissions = asyncHandler(async (req, res) => {
     return forbidden(res);
   }
 
+  // Compute rejection monitoring stats
+  const [totalSubmissions, approvedCount, rejectedCount, pendingCount] = await Promise.all([
+    prisma.taskAssignment.count({
+      where: { jobId, status: { in: ['SUBMITTED', 'APPROVED', 'REJECTED', 'RESUBMIT_REQUIRED'] } },
+    }),
+    prisma.taskAssignment.count({ where: { jobId, status: 'APPROVED' } }),
+    prisma.taskAssignment.count({ where: { jobId, status: 'REJECTED' } }),
+    prisma.taskAssignment.count({ where: { jobId, status: { in: ['SUBMITTED', 'RESUBMIT_REQUIRED'] } } }),
+  ]);
+  const rejectionRate = totalSubmissions > 0 ? (rejectedCount / totalSubmissions) * 100 : 0;
+  const isEmployerLimitReached = rejectionRate >= 40;
+  const isPlatformLimitReached = rejectionRate >= 50;
+
   const where = {
     jobId,
     ...(status && { status }),
@@ -225,6 +261,7 @@ const getSubmissions = asyncHandler(async (req, res) => {
   return paginated(res, submissions, {
     page: parseInt(page), limit: parseInt(limit), total,
     totalPages: Math.ceil(total / parseInt(limit)),
+    stats: { totalSubmissions, approvedCount, rejectedCount, pendingCount, rejectionRate: Math.round(rejectionRate * 10) / 10, isEmployerLimitReached, isPlatformLimitReached },
   });
 });
 
@@ -399,20 +436,52 @@ const rejectSubmission = asyncHandler(async (req, res) => {
     return badRequest(res, 'Rejection reason is required');
   }
 
-  const assignment = await prisma.taskAssignment.findUnique({
-    where: { id: assignmentId },
-    include: { job: true },
-  });
-
-  if (!assignment) return notFound(res, 'Submission not found');
-  if (assignment.job.employerId !== req.user.id && !['ADMIN', 'MODERATOR'].includes(req.user.role)) {
-    return forbidden(res);
-  }
-  if (assignment.status !== 'SUBMITTED') {
-    return badRequest(res, `Cannot reject in status: ${assignment.status}`);
-  }
-
+  // Perform concurrency-safe rejection inside a transaction
   await prisma.$transaction(async (tx) => {
+    const assignment = await tx.taskAssignment.findUnique({
+      where: { id: assignmentId },
+      include: { job: true },
+    });
+
+    if (!assignment) throw Object.assign(new Error('Submission not found'), { statusCode: 404 });
+    if (assignment.job.employerId !== req.user.id && !['ADMIN', 'MODERATOR'].includes(req.user.role)) {
+      throw Object.assign(new Error('Access denied'), { statusCode: 403 });
+    }
+    if (assignment.status !== 'SUBMITTED') {
+      throw Object.assign(new Error(`Cannot reject in status: ${assignment.status}`), { statusCode: 400 });
+    }
+
+    // ── Rejection Limit Enforcement (concurrency-safe inside transaction) ──
+    // Count all relevant submissions for this job
+    const [totalSubmissions, currentRejected] = await Promise.all([
+      tx.taskAssignment.count({
+        where: { jobId: assignment.job.id, status: { in: ['SUBMITTED', 'APPROVED', 'REJECTED', 'RESUBMIT_REQUIRED'] } },
+      }),
+      tx.taskAssignment.count({
+        where: { jobId: assignment.job.id, status: 'REJECTED' },
+      }),
+    ]);
+
+    if (totalSubmissions > 0) {
+      const newRejectionRate = ((currentRejected + 1) / totalSubmissions) * 100;
+
+      // 40% employer-level limit (only enforced for non-admin reviewers)
+      if (newRejectionRate > 40 && !['ADMIN', 'MODERATOR'].includes(req.user.role)) {
+        throw Object.assign(
+          new Error(`Rejection limit reached: you may reject a maximum of 40% of worker submissions for this job. Current rate: ${Math.round(newRejectionRate * 10) / 10}%.`),
+          { statusCode: 400 }
+        );
+      }
+
+      // 50% platform-level limit (enforced for everyone including admins)
+      if (newRejectionRate > 50) {
+        throw Object.assign(
+          new Error(`Platform rejection limit of 50% reached for this job. No further rejections are allowed.`),
+          { statusCode: 400 }
+        );
+      }
+    }
+
     await tx.taskAssignment.update({
       where: { id: assignmentId },
       data: {

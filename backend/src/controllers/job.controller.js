@@ -25,6 +25,7 @@ const getJobs = asyncHandler(async (req, res) => {
 
   const where = {
     status: 'ACTIVE',
+    deletedAt: null,
     OR: [
       { scheduledAt: null },
       { scheduledAt: { lte: now } },
@@ -67,10 +68,17 @@ const getJobs = asyncHandler(async (req, res) => {
         completedWorkers: true,
         approvedWorkers: true,
         proofTypes: true,
+        requiresScreenshot: true,
+        screenshotQuantity: true,
         visibility: true,
         status: true,
         endAt: true,
+        estimatedCompletionAt: true,
         createdAt: true,
+        deletedAt: true,
+        scheduledDeletionAt: true,
+        pausedAt: true,
+        pausedBy: true,
         category: { select: { id: true, name: true, icon: true } },
         subcategory: { select: { id: true, name: true } },
         targets: { select: { targetType: true, countryCode: true, regionCode: true } },
@@ -154,7 +162,7 @@ const startJob = asyncHandler(async (req, res) => {
     // Lock the job row
     const job = await tx.job.findUnique({ where: { id: jobId } });
     if (!job) throw Object.assign(new Error('Job not found'), { statusCode: 404 });
-    if (job.status !== 'ACTIVE') throw Object.assign(new Error('Job is not active'), { statusCode: 400 });
+    if (job.status !== 'ACTIVE' || job.deletedAt) throw Object.assign(new Error('Job is not active or has been removed'), { statusCode: 400 });
 
     const availableSlots = job.totalWorkers - job.completedWorkers;
     if (availableSlots <= 0) throw Object.assign(new Error('No slots available for this job'), { statusCode: 409 });
@@ -197,9 +205,9 @@ const createJob = asyncHandler(async (req, res) => {
   const {
     categoryId, subcategoryId, title, shortDescription,
     instructions, proofRequirements, proofTypes = 'TEXT,IMAGE',
-    requiresScreenshot = false, targetUrl, rewardPerWorker, totalWorkers,
+    requiresScreenshot = false, screenshotQuantity, targetUrl, rewardPerWorker, totalWorkers,
     targets = [{ targetType: 'GLOBAL' }],
-    scheduledAt, estimatedDays = 3, boostDuration = 0,
+    scheduledAt, estimatedDays = 3, endAt, boostDuration = 0,
     taskExpiryHours = 48, maxResubmissions = 3,
     visibility = 'NORMAL',
   } = req.body;
@@ -231,7 +239,8 @@ const createJob = asyncHandler(async (req, res) => {
   const platformFeeAmount = baseWorkerBudget * (platformFeePercent / 100);
 
   // Screenshot fee (default 3% when screenshot proof required)
-  const hasScreenshot = requiresScreenshot || (proofTypes && proofTypes.includes('IMAGE'));
+  const hasScreenshot = Boolean(requiresScreenshot || (proofTypes && proofTypes.includes('IMAGE')));
+  const parsedScreenshotQty = hasScreenshot ? Math.max(1, parseInt(screenshotQuantity) || 1) : 0;
   const screenshotFeeSetting = await prisma.platformSetting.findUnique({ where: { key: 'screenshot_fee_percent' } });
   const screenshotFeePercent = hasScreenshot ? parseFloat(screenshotFeeSetting?.value || '3') : 0;
   const screenshotFeeAmount = hasScreenshot ? baseWorkerBudget * (screenshotFeePercent / 100) : 0;
@@ -255,12 +264,18 @@ const createJob = asyncHandler(async (req, res) => {
     return badRequest(res, `Insufficient deposit balance. Required: $${totalCharge.toFixed(2)}, Available: $${parseFloat(wallet?.depositBalance || 0).toFixed(2)}`);
   }
 
-  // Calculate timing & scheduling
-  const numEstimatedDays = parseInt(estimatedDays) || 3;
+  // Calculate timing & scheduling (Flexible duration without unnecessary fixed maximum ceiling)
+  const numEstimatedDays = parseInt(estimatedDays) > 0 ? parseInt(estimatedDays) : 3;
   const isScheduled = scheduledAt && new Date(scheduledAt) > new Date();
   const jobScheduledAt = isScheduled ? new Date(scheduledAt) : null;
   const startTime = jobScheduledAt || new Date();
-  const estimatedCompletionAt = new Date(startTime.getTime() + numEstimatedDays * 24 * 60 * 60 * 1000);
+  
+  let estimatedCompletionAt = null;
+  if (endAt && !isNaN(new Date(endAt).getTime())) {
+    estimatedCompletionAt = new Date(endAt);
+  } else {
+    estimatedCompletionAt = new Date(startTime.getTime() + numEstimatedDays * 24 * 60 * 60 * 1000);
+  }
 
   // Boost start & expiry
   let boostStartedAt = null;
@@ -282,6 +297,7 @@ const createJob = asyncHandler(async (req, res) => {
         proofRequirements: proofRequirements.trim(),
         proofTypes,
         requiresScreenshot: hasScreenshot,
+        screenshotQuantity: parsedScreenshotQty,
         targetUrl: targetUrl || null,
         rewardPerWorker: reward,
         totalWorkers: workers,
@@ -303,6 +319,7 @@ const createJob = asyncHandler(async (req, res) => {
         estimatedDays: numEstimatedDays,
         scheduledAt: jobScheduledAt,
         estimatedCompletionAt,
+        endAt: estimatedCompletionAt,
         publishedAt: isScheduled ? null : new Date(),
         status: isScheduled ? 'SCHEDULED' : 'PENDING_REVIEW',
         visibility,
@@ -396,10 +413,24 @@ const changeJobStatus = asyncHandler(async (req, res) => {
   const newStatus = statusMap[action];
   if (!newStatus) return badRequest(res, 'Invalid action');
 
-  await prisma.job.update({ where: { id }, data: { status: newStatus } });
+  // Track pause metadata for employer pauses
+  const pauseData = action === 'pause'
+    ? { pausedAt: new Date(), pausedBy: 'EMPLOYER' }
+    : action === 'resume'
+    ? { pausedAt: null, pausedBy: null }
+    : {};
 
-  // If cancelled, release locked budget back to deposit
+  await prisma.job.update({ where: { id }, data: { status: newStatus, ...pauseData } });
+
+  // If cancelled, soft-delete (schedule permanent deletion in 7 days) and release locked budget
   if (action === 'cancel') {
+    const now = new Date();
+    const scheduledDeletionAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    await prisma.job.update({
+      where: { id },
+      data: { deletedAt: now, scheduledDeletionAt },
+    });
+
     const wallet = await prisma.wallet.findUnique({ where: { userId: job.employerId } });
     const remainingSlots = job.totalWorkers - job.approvedWorkers;
     const refundAmount = parseFloat(job.rewardPerWorker) * remainingSlots + parseFloat(job.platformFee);
@@ -430,6 +461,70 @@ const changeJobStatus = asyncHandler(async (req, res) => {
   }
 
   return success(res, {}, `Job ${action}d successfully`);
+});
+
+/**
+ * DELETE /api/jobs/:id - Employer soft-deletes a job (schedules permanent deletion in 7 days)
+ */
+const deleteJob = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const job = await prisma.job.findUnique({ where: { id } });
+  if (!job) return notFound(res);
+  if (job.employerId !== req.user.id && req.user.role !== 'ADMIN') return forbidden(res);
+  if (job.deletedAt) return badRequest(res, 'Job is already scheduled for deletion');
+
+  const now = new Date();
+  const scheduledDeletionAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Mark for deletion and release remaining locked budget
+  const wallet = await prisma.wallet.findUnique({ where: { userId: job.employerId } });
+  const remainingSlots = job.totalWorkers - job.approvedWorkers;
+  const refundAmount = parseFloat(job.rewardPerWorker) * remainingSlots + parseFloat(job.platformFee);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.job.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+        deletedAt: now,
+        scheduledDeletionAt,
+      },
+    });
+
+    if (refundAmount > 0 && wallet) {
+      const updatedWallet = await tx.wallet.update({
+        where: { userId: job.employerId },
+        data: {
+          lockedBalance: { decrement: refundAmount },
+          depositBalance: { increment: refundAmount },
+        },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'JOB_BUDGET_RELEASE',
+          amount: refundAmount,
+          direction: 'CREDIT',
+          referenceType: 'Job',
+          referenceId: job.id,
+          description: `Budget released for deleted job: ${job.title}`,
+          balanceAfter: updatedWallet.depositBalance,
+        },
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorId: req.user.id,
+        action: 'JOB_DELETED',
+        entityType: 'Job',
+        entityId: id,
+        newValue: JSON.stringify({ deletedAt: now, scheduledDeletionAt, reason: 'employer_deleted' }),
+      },
+    });
+  }, { timeout: 30000, maxWait: 15000 });
+
+  return success(res, { scheduledDeletionAt }, 'Job scheduled for permanent deletion in 7 days. Unused budget has been refunded.');
 });
 
 /**
@@ -466,4 +561,4 @@ const getEmployerJobs = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getJobs, getJob, startJob, createJob, updateJob, changeJobStatus, getEmployerJobs };
+module.exports = { getJobs, getJob, startJob, createJob, updateJob, changeJobStatus, deleteJob, getEmployerJobs };

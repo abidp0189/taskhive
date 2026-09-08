@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../components/common/Badge';
-import { PlusCircle, Layers, Pause, Play, XCircle, ArrowRight, Eye, Clock } from 'lucide-react';
+import { PlusCircle, Layers, Pause, Play, XCircle, ArrowRight, Eye, Clock, Trash2, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -34,6 +34,25 @@ export const MyJobsPage = () => {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || `Failed to ${action} job`);
+    }
+  };
+
+  const handleDeleteJob = async (jobId, title) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${title}"?\n\nUnused escrow budget will be refunded to your deposit balance immediately. The campaign will enter a 7-day retention period before being permanently deleted.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await api.delete(`/jobs/${jobId}`);
+      if (res.data?.success) {
+        toast.success(res.data.message || 'Job deleted and scheduled for 7-day cleanup.');
+        fetchJobs();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete job');
     }
   };
 
@@ -106,7 +125,24 @@ export const MyJobsPage = () => {
                       ${parseFloat(job.rewardPerWorker).toFixed(2)}
                     </td>
                     <td className="py-3.5 px-4">
-                      <Badge>{job.status}</Badge>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge>{job.status}</Badge>
+                        {job.pausedBy === 'ADMIN' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300 font-semibold">
+                            Admin Paused
+                          </span>
+                        )}
+                        {job.deletedAt && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300 font-medium">
+                            Pending Deletion
+                          </span>
+                        )}
+                        {job.scheduledDeletionAt && (
+                          <span className="text-[9px] text-gray-500">
+                            Auto-delete: {new Date(job.scheduledDeletionAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4 text-right space-x-2">
                       <Link
@@ -126,7 +162,7 @@ export const MyJobsPage = () => {
                         </button>
                       )}
 
-                      {job.status === 'PAUSED' && (
+                      {job.status === 'PAUSED' && job.pausedBy !== 'ADMIN' && (
                         <button
                           onClick={() => handleAction(job.id, 'resume')}
                           className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-emerald-400 hover:bg-gray-800"
@@ -136,13 +172,13 @@ export const MyJobsPage = () => {
                         </button>
                       )}
 
-                      {['ACTIVE', 'PAUSED'].includes(job.status) && (
+                      {!job.deletedAt && (
                         <button
-                          onClick={() => handleAction(job.id, 'cancel')}
-                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-rose-400 hover:bg-gray-800"
-                          title="Cancel Job (Refunds unused budget)"
+                          onClick={() => handleDeleteJob(job.id, job.title)}
+                          className="px-2.5 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-rose-400 hover:bg-rose-950/50 hover:border-rose-800 transition-colors"
+                          title="Delete Campaign (Refunds budget & schedules 7-day data cleanup)"
                         >
-                          <XCircle className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </td>

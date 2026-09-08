@@ -252,6 +252,156 @@ const updateJobStatus = asyncHandler(async (req, res) => {
   return success(res, {}, `Job status updated to ${status}`);
 });
 
+/**
+ * POST /api/admin/jobs/:id/pause  – Admin pauses a job (e.g., due to moderation)
+ */
+const adminPauseJob = asyncHandler(async (req, res) => {
+  const { reason } = req.body;
+  const job = await prisma.job.findUnique({ where: { id: req.params.id } });
+  if (!job) return notFound(res);
+  if (job.status === 'PAUSED') return badRequest(res, 'Job is already paused');
+
+  await prisma.$transaction(async (tx) => {
+    await tx.job.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'PAUSED',
+        pausedAt: new Date(),
+        pausedBy: 'ADMIN',
+        ...(reason && { rejectionReason: reason }),
+      },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorId: req.user.id,
+        action: 'JOB_PAUSED_BY_ADMIN',
+        entityType: 'Job',
+        entityId: req.params.id,
+        newValue: JSON.stringify({ status: 'PAUSED', pausedBy: 'ADMIN', reason }),
+      },
+    });
+    await tx.notification.create({
+      data: {
+        userId: job.employerId,
+        type: 'JOB_REJECTED',
+        title: 'Job Paused by Admin',
+        message: `Your job "${job.title}" has been paused by an admin${reason ? `. Reason: ${reason}` : ''}. Please contact support for more information.`,
+        link: `/employer/jobs/${job.id}`,
+      },
+    });
+  }, { timeout: 30000, maxWait: 15000 });
+
+  return success(res, {}, 'Job paused by admin');
+});
+
+/**
+ * POST /api/admin/jobs/:id/resume – Admin resumes a previously paused job
+ */
+const adminResumeJob = asyncHandler(async (req, res) => {
+  const job = await prisma.job.findUnique({ where: { id: req.params.id } });
+  if (!job) return notFound(res);
+  if (job.status !== 'PAUSED') return badRequest(res, 'Job is not paused');
+
+  await prisma.$transaction(async (tx) => {
+    await tx.job.update({
+      where: { id: req.params.id },
+      data: { status: 'ACTIVE', pausedAt: null, pausedBy: null },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorId: req.user.id,
+        action: 'JOB_RESUMED_BY_ADMIN',
+        entityType: 'Job',
+        entityId: req.params.id,
+        newValue: JSON.stringify({ status: 'ACTIVE' }),
+      },
+    });
+    await tx.notification.create({
+      data: {
+        userId: job.employerId,
+        type: 'SYSTEM',
+        title: 'Job Resumed',
+        message: `Your job "${job.title}" has been resumed by an admin and is now active.`,
+        link: `/employer/jobs/${job.id}`,
+      },
+    });
+  }, { timeout: 30000, maxWait: 15000 });
+
+  return success(res, {}, 'Job resumed by admin');
+});
+
+/**
+ * DELETE /api/admin/jobs/:id – Admin soft-deletes a job (schedules permanent deletion in 7 days)
+ */
+const adminDeleteJob = asyncHandler(async (req, res) => {
+  const { reason } = req.body;
+  const job = await prisma.job.findUnique({ where: { id: req.params.id } });
+  if (!job) return notFound(res);
+  if (job.deletedAt) return badRequest(res, 'Job is already scheduled for deletion');
+
+  const now = new Date();
+  const scheduledDeletionAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Release any remaining locked budget back to the employer
+  const wallet = await prisma.wallet.findUnique({ where: { userId: job.employerId } });
+  const remainingSlots = job.totalWorkers - job.approvedWorkers;
+  const refundAmount = parseFloat(job.rewardPerWorker) * remainingSlots + parseFloat(job.platformFee);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.job.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'CANCELLED',
+        deletedAt: now,
+        scheduledDeletionAt,
+        ...(reason && { rejectionReason: reason }),
+      },
+    });
+    if (refundAmount > 0 && wallet) {
+      const updatedWallet = await tx.wallet.update({
+        where: { userId: job.employerId },
+        data: {
+          lockedBalance: { decrement: refundAmount },
+          depositBalance: { increment: refundAmount },
+        },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'JOB_BUDGET_RELEASE',
+          amount: refundAmount,
+          direction: 'CREDIT',
+          referenceType: 'Job',
+          referenceId: job.id,
+          description: `Budget released for admin-deleted job: ${job.title}`,
+          balanceAfter: updatedWallet.depositBalance,
+        },
+      });
+    }
+    await tx.auditLog.create({
+      data: {
+        actorId: req.user.id,
+        action: 'JOB_DELETED_BY_ADMIN',
+        entityType: 'Job',
+        entityId: req.params.id,
+        newValue: JSON.stringify({ deletedAt: now, scheduledDeletionAt, reason }),
+      },
+    });
+    await tx.notification.create({
+      data: {
+        userId: job.employerId,
+        type: 'JOB_REJECTED',
+        title: 'Job Removed by Admin',
+        message: `Your job "${job.title}" has been removed by an admin${reason ? `. Reason: ${reason}` : ''}. Unused funds have been refunded.`,
+        link: `/employer/jobs/${job.id}`,
+      },
+    });
+  }, { timeout: 30000, maxWait: 15000 });
+
+  return success(res, { scheduledDeletionAt }, 'Job removed and scheduled for permanent deletion in 7 days');
+});
+
+
 // ─── Withdrawal Management ───────────────────────
 
 const getWithdrawals = asyncHandler(async (req, res) => {
@@ -692,7 +842,7 @@ const getAuditLogs = asyncHandler(async (req, res) => {
 
 module.exports = {
   getDashboard, getUsers, getUser, updateUserStatus, adjustBalance,
-  getAdminJobs, updateJobStatus,
+  getAdminJobs, updateJobStatus, adminPauseJob, adminResumeJob, adminDeleteJob,
   getWithdrawals, processWithdrawal,
   getDeposits, confirmDeposit, rejectDeposit,
   getCategories, createCategory, updateCategory, createSubcategory, updateSubcategory,

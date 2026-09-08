@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getDashboard, getUsers, getUser, updateUserStatus, adjustBalance,
-  getAdminJobs, updateJobStatus,
+  getAdminJobs, updateJobStatus, adminPauseJob, adminResumeJob, adminDeleteJob,
   getWithdrawals, processWithdrawal,
   getDeposits, confirmDeposit, rejectDeposit,
   getCategories, createCategory, updateCategory, createSubcategory, updateSubcategory,
@@ -26,6 +26,9 @@ router.post('/users/:id/balance-adjustment', ...adminOnly, adjustBalance);
 // Jobs
 router.get('/jobs', ...adminOrMod, getAdminJobs);
 router.patch('/jobs/:id/status', ...adminOrMod, updateJobStatus);
+router.post('/jobs/:id/pause', ...adminOrMod, adminPauseJob);
+router.post('/jobs/:id/resume', ...adminOrMod, adminResumeJob);
+router.delete('/jobs/:id', ...adminOrMod, adminDeleteJob);
 
 // Withdrawals
 router.get('/withdrawals', ...adminOnly, getWithdrawals);

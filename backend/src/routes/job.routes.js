@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getJobs, getJob, startJob, createJob, updateJob, changeJobStatus,
+  getJobs, getJob, startJob, createJob, updateJob, changeJobStatus, deleteJob,
 } = require('../controllers/job.controller');
 const { authenticate, authorize, optionalAuth } = require('../middleware/auth.middleware');
 
@@ -18,5 +18,6 @@ router.patch('/:id', authenticate, authorize('EMPLOYER', 'ADMIN'), updateJob);
 router.post('/:id/pause', authenticate, authorize('EMPLOYER', 'ADMIN'), changeJobStatus);
 router.post('/:id/resume', authenticate, authorize('EMPLOYER', 'ADMIN'), changeJobStatus);
 router.post('/:id/cancel', authenticate, authorize('EMPLOYER', 'ADMIN'), changeJobStatus);
+router.delete('/:id', authenticate, authorize('EMPLOYER', 'ADMIN'), deleteJob);
 
 module.exports = router;
