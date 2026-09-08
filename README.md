@@ -179,18 +179,8 @@
 
 ---
 
-## 🔑 Default Seed Accounts
 
-After running `npm run db:seed`, the following administrative account is ready for use:
 
-| Role | Email | Password | Details |
-|---|---|---|---|
-| **Admin** | `admin@tomarkaj.com` | `password123` | Full administrative access to moderation, settings, and ledger |
-| **Admin (Legacy)** | `admin@taskhive.com` | `password123` | Backwards-compatible admin credentials |
-
-> Workers and Employers can be registered organically via the **/register** page. New accounts automatically receive a linked wallet, referral code, and welcome configuration.
-
----
 
 ## 📜 Available NPM Scripts
 
