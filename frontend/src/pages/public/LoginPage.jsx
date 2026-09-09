@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '../../context/AuthContext';
-import { Zap, Lock, Mail, ArrowRight, Shield, Briefcase, UserCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Zap, Lock, Mail, ArrowRight, Shield, Briefcase, UserCheck, Eye, EyeOff, AlertCircle, KeyRound } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
@@ -19,6 +19,7 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [showForgotHint, setShowForgotHint] = useState(false);
 
   const initialRoleParam = searchParams.get('role')?.toUpperCase();
   const [activeRole, setActiveRole] = useState(
@@ -33,10 +34,12 @@ export const LoginPage = () => {
   const selectRole = (role) => {
     setActiveRole(role);
     setLoginError('');
+    setShowForgotHint(false);
   };
 
   const onSubmit = async (data) => {
     setLoginError('');
+    setShowForgotHint(false);
     setLoading(true);
     const result = await login(data.email.trim(), data.password);
     setLoading(false);
@@ -53,6 +56,10 @@ export const LoginPage = () => {
       }
     } else {
       setLoginError(result.message || 'Invalid email or password');
+      // Show "Forgot password?" hint after any login failure for Worker/Employer
+      if (activeRole !== 'ADMIN') {
+        setShowForgotHint(true);
+      }
     }
   };
 
@@ -122,9 +129,28 @@ export const LoginPage = () => {
           </div>
 
           {loginError && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{loginError}</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{loginError}</span>
+              </div>
+
+              {/* Forgot password hint — only for Worker / Employer */}
+              {showForgotHint && activeRole !== 'ADMIN' && (
+                <div
+                  className="flex items-center justify-center gap-1.5"
+                  style={{ animation: 'fadeInUp 0.35s ease both' }}
+                >
+                  <KeyRound className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
+                  <span className="text-xs text-[var(--color-text-secondary)]">Forgot your password?</span>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-bold text-[var(--color-btn-primary)] hover:underline underline-offset-2 transition-all"
+                  >
+                    Reset it here →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
@@ -198,6 +224,13 @@ export const LoginPage = () => {
           </div>
         </form>
       </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

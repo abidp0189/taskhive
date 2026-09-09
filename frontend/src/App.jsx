@@ -12,6 +12,8 @@ import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { HowItWorksPage } from './pages/public/HowItWorksPage';
 import { FaqPage } from './pages/public/FaqPage';
+import { ForgotPasswordPage } from './pages/public/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/public/ResetPasswordPage';
 
 // Worker Pages
 import { FindJobsPage } from './pages/worker/FindJobsPage';
@@ -82,6 +84,8 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/faq" element={<FaqPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Authenticated Shared */}
           <Route element={<ProtectedRoute allowedRoles={['WORKER', 'EMPLOYER', 'ADMIN', 'MODERATOR']} />}>

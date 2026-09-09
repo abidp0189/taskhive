@@ -216,7 +216,8 @@ model User {
   fraudFlags       FraudFlag[]
   supportTickets   SupportTicket[]       @relation("UserTickets")
   assignedTickets  SupportTicket[]       @relation("AssignedTickets")
-  refreshTokens    RefreshToken[]
+  refreshTokens         RefreshToken[]
+  passwordResetTokens   PasswordResetToken[]
 
   @@index([email])
   @@index([referralCode])
@@ -235,6 +236,24 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+}
+
+// ─────────────────────────────────────────────
+// PASSWORD RESET TOKEN
+// ─────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────

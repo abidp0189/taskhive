@@ -1,8 +1,10 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const prisma = require('../utils/prisma');
 const { generateAccessToken, generateRefreshToken, generateReferralCode, verifyAccessToken } = require('../utils/jwt');
 const { success, created, error, badRequest, unauthorized, notFound } = require('../utils/response');
 const { asyncHandler } = require('../middleware/error.middleware');
+const { sendPasswordResetEmail } = require('../utils/mailer');
 
 /**
  * POST /api/auth/register
@@ -290,4 +292,90 @@ const changePassword = asyncHandler(async (req, res) => {
   return success(res, {}, 'Password changed. Please login again.');
 });
 
-module.exports = { register, login, refresh, logout, getMe, updateProfile, changePassword };
+/**
+ * POST /api/auth/forgot-password
+ * Only for WORKER and EMPLOYER accounts.
+ */
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) return badRequest(res, 'Email address is required');
+
+  // Always return the same message to prevent user enumeration
+  const genericMsg = 'If an account with that email exists, a password reset link has been sent.';
+
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+
+  // Silently skip if not found or if user is ADMIN/MODERATOR
+  if (!user || user.role === 'ADMIN' || user.role === 'MODERATOR') {
+    return success(res, {}, genericMsg);
+  }
+
+  if (user.status === 'BANNED' || user.status === 'SUSPENDED') {
+    return success(res, {}, genericMsg);
+  }
+
+  // Invalidate any existing unused tokens for this user
+  await prisma.passwordResetToken.updateMany({
+    where: { userId: user.id, used: false },
+    data: { used: true },
+  });
+
+  // Generate a secure random token
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.passwordResetToken.create({
+    data: { userId: user.id, token: rawToken, expiresAt },
+  });
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+
+  await sendPasswordResetEmail(user.email, resetLink, user.name);
+
+  return success(res, {}, genericMsg);
+});
+
+/**
+ * POST /api/auth/reset-password
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return badRequest(res, 'Token and new password are required');
+  if (password.length < 8) return badRequest(res, 'Password must be at least 8 characters');
+
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { token },
+    include: { user: true },
+  });
+
+  if (!record || record.used || record.expiresAt < new Date()) {
+    return error(res, 'This reset link is invalid or has expired. Please request a new one.', 400);
+  }
+
+  // Block admin/moderator just in case
+  if (record.user.role === 'ADMIN' || record.user.role === 'MODERATOR') {
+    return error(res, 'Password reset is not available for this account type.', 403);
+  }
+
+  const newHash = await bcrypt.hash(password, 12);
+
+  await prisma.$transaction([
+    // Mark token as used
+    prisma.passwordResetToken.update({
+      where: { id: record.id },
+      data: { used: true },
+    }),
+    // Update password
+    prisma.user.update({
+      where: { id: record.userId },
+      data: { passwordHash: newHash },
+    }),
+    // Invalidate all existing refresh tokens (force re-login)
+    prisma.refreshToken.deleteMany({ where: { userId: record.userId } }),
+  ]);
+
+  return success(res, {}, 'Password reset successfully. You can now log in with your new password.');
+});
+
+module.exports = { register, login, refresh, logout, getMe, updateProfile, changePassword, forgotPassword, resetPassword };
