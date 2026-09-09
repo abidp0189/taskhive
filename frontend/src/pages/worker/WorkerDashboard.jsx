@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Zap
 } from 'lucide-react';
+import { WorkerPromoSection } from '../../components/worker/WorkerPromoSection';
 import api from '../../services/api';
 
 export const WorkerDashboard = () => {
@@ -96,6 +97,9 @@ export const WorkerDashboard = () => {
           </Link>
         </div>
       </div>
+
+      {/* Admin Announcement & Advertisement Section */}
+      <WorkerPromoSection />
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

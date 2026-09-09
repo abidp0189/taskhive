@@ -39,12 +39,100 @@ import { AdminWithdrawalsPage } from './pages/admin/AdminWithdrawalsPage';
 import { AdminDepositsPage } from './pages/admin/AdminDepositsPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
+import { AdminPromotionsPage } from './pages/admin/AdminPromotionsPage';
 
 // Shared Pages
 import { SupportTicketsPage } from './pages/support/SupportTicketsPage';
 
 import { ThemeProvider } from './context/ThemeContext';
 import { RealtimeProvider } from './context/RealtimeContext';
+import { useAuth } from './context/AuthContext';
+import { TelegramFloatingButton } from './components/common/TelegramFloatingButton';
+
+function AppContent() {
+  const { user } = useAuth();
+  const showTelegram = Boolean(user && (user.role === 'WORKER' || user.role === 'EMPLOYER'));
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] relative transition-colors duration-300">
+      <div className="aurora-overlay"></div>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            background: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '16px',
+            fontSize: '13px',
+          },
+        }}
+      />
+
+      <Navbar />
+
+      <main className="flex-1">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/jobs" element={<FindJobsPage />} />
+          <Route path="/jobs/:id" element={<JobDetailsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+
+          {/* Authenticated Shared */}
+          <Route element={<ProtectedRoute allowedRoles={['WORKER', 'EMPLOYER', 'ADMIN', 'MODERATOR']} />}>
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/support" element={<SupportTicketsPage />} />
+          </Route>
+
+          {/* Worker Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['WORKER', 'ADMIN']} />}>
+            <Route path="/dashboard" element={<WorkerDashboard />} />
+            <Route path="/my-tasks" element={<MyTasksPage />} />
+            <Route path="/my-tasks/:id" element={<JobDetailsPage />} />
+            <Route path="/wallet" element={<WalletPage />} />
+            <Route path="/withdraw" element={<WithdrawPage />} />
+            <Route path="/referral" element={<ReferralPage />} />
+          </Route>
+
+          {/* Employer Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['EMPLOYER', 'ADMIN']} />}>
+            <Route path="/employer/dashboard" element={<EmployerDashboard />} />
+            <Route path="/employer/jobs" element={<MyJobsPage />} />
+            <Route path="/employer/jobs/new" element={<CreateJobWizard />} />
+            <Route path="/employer/jobs/:id/submissions" element={<ReviewSubmissionsPage />} />
+            <Route path="/employer/wallet" element={<EmployerWalletPage />} />
+          </Route>
+
+          {/* Admin Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']} />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/promotions" element={<AdminPromotionsPage />} />
+            <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/jobs" element={<AdminJobsPage />} />
+            <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
+            <Route path="/admin/deposits" element={<AdminDepositsPage />} />
+            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+
+      <Footer />
+
+      {/* Persistent Telegram Floating Button for Worker and Employer accounts */}
+      {showTelegram && <TelegramFloatingButton />}
+    </div>
+  );
+}
 
 export function App() {
   return (
@@ -52,83 +140,11 @@ export function App() {
       <AuthProvider>
         <BrowserRouter>
           <RealtimeProvider>
-            <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] relative transition-colors duration-300">
-              <div className="aurora-overlay"></div>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 3500,
-                style: {
-                  background: 'var(--color-surface)',
-                  color: 'var(--color-text)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '16px',
-                  fontSize: '13px',
-                },
-              }}
-            />
-
-          <Navbar />
-
-          <main className="flex-1">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/jobs" element={<FindJobsPage />} />
-              <Route path="/jobs/:id" element={<JobDetailsPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/how-it-works" element={<HowItWorksPage />} />
-              <Route path="/faq" element={<FaqPage />} />
-
-              {/* Authenticated Shared */}
-              <Route element={<ProtectedRoute allowedRoles={['WORKER', 'EMPLOYER', 'ADMIN', 'MODERATOR']} />}>
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/support" element={<SupportTicketsPage />} />
-              </Route>
-
-              {/* Worker Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['WORKER', 'ADMIN']} />}>
-                <Route path="/dashboard" element={<WorkerDashboard />} />
-                <Route path="/my-tasks" element={<MyTasksPage />} />
-                <Route path="/my-tasks/:id" element={<JobDetailsPage />} />
-                <Route path="/wallet" element={<WalletPage />} />
-                <Route path="/withdraw" element={<WithdrawPage />} />
-                <Route path="/referral" element={<ReferralPage />} />
-              </Route>
-
-              {/* Employer Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['EMPLOYER', 'ADMIN']} />}>
-                <Route path="/employer/dashboard" element={<EmployerDashboard />} />
-                <Route path="/employer/jobs" element={<MyJobsPage />} />
-                <Route path="/employer/jobs/new" element={<CreateJobWizard />} />
-                <Route path="/employer/jobs/:id/submissions" element={<ReviewSubmissionsPage />} />
-                <Route path="/employer/wallet" element={<EmployerWalletPage />} />
-              </Route>
-
-              {/* Admin Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']} />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/categories" element={<AdminCategoriesPage />} />
-                <Route path="/admin/users" element={<AdminUsersPage />} />
-                <Route path="/admin/jobs" element={<AdminJobsPage />} />
-                <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
-                <Route path="/admin/deposits" element={<AdminDepositsPage />} />
-                <Route path="/admin/settings" element={<AdminSettingsPage />} />
-              </Route>
-
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-
-          <Footer />
-        </div>
-      </RealtimeProvider>
-    </BrowserRouter>
-  </AuthProvider>
-</ThemeProvider>
+            <AppContent />
+          </RealtimeProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

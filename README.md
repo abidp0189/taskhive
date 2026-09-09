@@ -8,30 +8,56 @@
 [![Prisma](https://img.shields.io/badge/Prisma-6.19-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![MySQL](https://img.shields.io/badge/MySQL-Aiven_Cloud-4479A1?logo=mysql&logoColor=white)](https://aiven.io/)
 
-**Tomar Kaj** (formerly TaskHive) is a production-ready, escrow-backed microjob and freelance task marketplace. The platform connects employers seeking rapid task completion with online workers, featuring role-based workflows (**Worker**, **Employer**, **Admin/Moderator**), atomic ledger-based accounting, bKash/Nagad payment handling with live BDT conversion, client-side base64 proof uploads with full-screen lightbox review, and automated proof lifecycle cleanup.
+**Tomar Kaj** ([https://www.tomarkaj.com/](https://www.tomarkaj.com/)) is a production-ready, escrow-backed microjob and freelance task marketplace. The platform connects employers seeking rapid task execution with verified online workers, featuring role-based workflows (**Worker**, **Employer**, **Admin/Moderator**), atomic ledger accounting, live bKash/Nagad localized payments, Server-Sent Events (SSE) real-time event distribution, Cloudflare R2 / base64 asset management, and an admin-controlled promotion & announcement engine.
 
 ---
 
-## 🌟 Key Highlights & Recent Updates
+## 🌟 Key Highlights & Feature Matrix
 
-- **Rebranded to Tomar Kaj**: Streamlined UI, responsive navigation, dark-mode-first aesthetic (`tomarkaj_theme`), and localized payment experience.
-- **bKash & Nagad Integration**: Native deposit & withdrawal support with transaction ID tracking, admin verification, and live BDT conversions ($1 USD = 100 BDT).
-- **Ephemeral Storage Resilience**: Proof screenshots are encoded client-side into self-contained base64 data URIs and stored in MySQL (`MEDIUMTEXT`), eliminating file-loss issues on ephemeral hosting platforms (Render, Vercel).
-- **Interactive Proof Lightbox**: Employers and workers can inspect submitted task proof images using an interactive full-screen modal with zoom, pan, and download controls.
-- **Automated 30-Day Proof Cleanup**: Built-in background engine runs on startup and every 6 hours to prune proofs older than 30 days, keeping database storage lean and high-performing.
-- **Atomic Escrow Ledger**: Exact, high-precision financial operations powered by `Decimal.js` ensuring funds are locked at campaign creation and only disbursed upon proof approval.
-- **Configurable Platform Controls**: Admins can dynamically adjust minimum deposit (`min_deposit_amount`), minimum withdrawal, boost tiers, platform fees, and referral commissions directly from the dashboard.
+### 📢 Admin Announcement System
+- **Worker Dashboard Broadcast**: Real-time announcement line positioned above the microjob filters and task listings.
+- **Full Unicode & Multilingual Support**: Flawlessly renders Bangla, English, mixed scripts, Unicode characters, and emojis (e.g. `📢 নতুন Update — আজকের নতুন কাজগুলো এখন Available!`).
+- **Single-Active Coordination**: Automatically coordinates active status so only the currently active broadcast is displayed to workers.
+- **Clean Empty State**: When no announcement is active, no empty or broken container is displayed.
+
+### 🖼️ Worker Advertisement Banner System
+- **Responsive Banner Display**: High-definition, responsive promotional banner integrated directly below announcements.
+- **"Paid" Sponsor Badge**: Clearly identified with a sleek, translucent backdrop badge.
+- **Secure Destination Navigation**: Worker clicks open the destination in a new tab or internal route safely.
+- **Automated Asset Cleanup**: When replacing an advertisement image, the new file is saved and the database is updated before deleting the old file to guarantee zero broken images and zero orphaned files. Deleting an advertisement completely purges its associated storage asset.
+
+### ⚡ Real-Time SSE (Server-Sent Events) Infrastructure
+- **Instant Client Propagation**: Workers receive updates for `announcement:updated`, `announcement:deleted`, `advertisement:updated`, and `advertisement:deleted` immediately without manual browser refreshes.
+- **Lightweight & Battery-Friendly**: Utilizes native browser `EventSource` with automated reconnection and zero external socket overhead.
+
+### ✈️ Persistent Viewport-Fixed Telegram Button
+- **Fixed Viewport Positioning**: Floats permanently at the bottom-right corner of the screen (`position: fixed`) and does not move during page scrolling.
+- **Role-Specific Visibility**: Exclusively displayed for **Worker** and **Employer** accounts. Hidden on guest and admin routes.
+- **Mobile Safe-Area Aware**: Accounts for mobile navigation bars and safe-area insets (`env(safe-area-inset-bottom)`).
+- **Centralized Configuration**: Configured from a single source of truth (`frontend/src/config/constants.js` → `TELEGRAM_LINK`).
+- **Accessibility**: Includes accessible label (`aria-label`), tooltip title, and keyboard focus states.
+
+### 🛡️ Security, Validation & Escrow
+- **Backend Role-Based Access Control (RBAC)**: All administrative promotion and configuration routes are guarded server-side by `authenticate` and `authorize('ADMIN')`.
+- **Destination URL Protocol Sanitization**: Strictly allows standard `https://` and internal paths while rejecting dangerous protocols (`javascript:`, `data:`, `vbscript:`, `file:`, `//`).
+- **Image Validation**: Strict validation for MIME types (`image/jpeg`, `image/png`, `image/webp`), extensions, and file size (max 5MB).
+- **Atomic Escrow Ledger**: Microjob reward funds are locked at campaign creation via `Decimal.js` and disbursed directly into the worker's wallet upon employer approval.
+- **bKash & Nagad Payments**: Dynamic payment gateway numbers configurable by admin with transaction verification and live BDT conversions ($1 USD = 100 BDT).
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Domain | Technology |
-|---|---|
-| **Frontend** | React 19, Vite, Tailwind CSS v4, Framer Motion, Axios (with auth/refresh interceptors), React Hook Form, Zod, Lucide Icons, React Hot Toast |
-| **Backend** | Node.js, Express.js (v5), Prisma ORM (v6), Decimal.js, Bcrypt, JWT + Refresh Tokens, Helmet, Morgan, Multer |
-| **Database** | Cloud MySQL (Aiven for MySQL) with SSL or local MySQL |
-| **Deployment** | Vercel (Frontend SPA), Render (Backend API Web Service), Aiven (Managed Cloud Database) |
+| Domain | Technology | Description |
+|---|---|---|
+| **Frontend** | React 19.2, Vite 8.2, Tailwind CSS v4.3 | High-performance SPA with modern dark/light glassmorphism styling |
+| **Icons & UI** | Lucide React, Framer Motion, React Hot Toast | Responsive micro-animations and intuitive feedback |
+| **Forms & Validation** | React Hook Form, Zod | Fast client-side schema validation |
+| **Backend** | Node.js, Express.js 5.2 | Scalable REST API with rate limiting, helmet, and cookie-parser |
+| **Real-Time** | Server-Sent Events (SSE) | Native real-time event streaming per-user and per-role |
+| **Database & ORM** | MySQL (Aiven Cloud), Prisma 6.19 | Type-safe relational database management with indexes |
+| **Object Storage** | Cloudflare R2 / Local fallback | S3-compatible cloud object storage with public CDN delivery |
+| **Authentication** | JWT (Access + Refresh Tokens), Bcrypt | Secure token rotation with role-based authorization |
 
 ---
 
@@ -39,34 +65,39 @@
 
 ```
 ├── frontend/                         # React 19 + Vite + Tailwind CSS v4 SPA
-│   ├── public/                       # Static branding assets & favicon (tomar-kaj-logo.png)
+│   ├── public/                       # Favicons, manifest & tomar-kaj-logo.png
 │   ├── src/
-│   │   ├── components/common/        # Navbar, Footer, ImageLightboxModal, PaymentLogos, StatCard, Badge
-│   │   ├── context/                  # AuthContext (JWT & wallet live sync), ThemeContext (Dark mode default)
+│   │   ├── components/
+│   │   │   ├── common/               # Navbar, Footer, TelegramFloatingButton, StatCard, Badge
+│   │   │   └── worker/               # WorkerAnnouncementBanner, WorkerAdvertisementBanner, WorkerPromoSection
+│   │   ├── config/
+│   │   │   └── constants.js          # Centralized constants (TELEGRAM_LINK)
+│   │   ├── context/                  # AuthContext, ThemeContext, RealtimeContext (SSE)
 │   │   ├── pages/
 │   │   │   ├── public/               # LandingPage, LoginPage, RegisterPage, HowItWorksPage, FAQPage
-│   │   │   ├── worker/               # WorkerDashboard, FindJobs, JobDetails, MyTasks, WorkerWallet, WithdrawPage, ReferralPage
-│   │   │   ├── employer/             # EmployerDashboard, 4-Step Job Wizard, MyJobs, ReviewSubmissionsPage, EmployerWallet
-│   │   │   ├── admin/                # AdminDashboard, User Management, Job Moderation, Withdrawals, Deposits, Settings
+│   │   │   ├── worker/               # WorkerDashboard, FindJobsPage, JobDetailsPage, MyTasksPage, WalletPage, WithdrawPage, ReferralPage
+│   │   │   ├── employer/             # EmployerDashboard, CreateJobWizard, MyJobsPage, ReviewSubmissionsPage, EmployerWalletPage
+│   │   │   ├── admin/                # AdminDashboard, AdminPromotionsPage, AdminCategoriesPage, AdminUsersPage, AdminJobsPage, AdminWithdrawalsPage, AdminDepositsPage, AdminSettingsPage
 │   │   │   └── support/              # 24/7 Support Desk & Threaded Ticket Messaging
 │   │   ├── services/                 # Axios instance (auto token attachment & 401 refresh handling)
-│   │   ├── App.jsx                   # Role-based protected routes
+│   │   ├── App.jsx                   # Role-based protected routes & root Telegram button injection
 │   │   └── main.jsx
 │   ├── package.json
 │   └── vite.config.js
 │
 ├── backend/                          # Node.js + Express 5 + Prisma REST API
 │   ├── prisma/
-│   │   ├── schema.prisma             # Relational data model (Users, Jobs, Tasks, Proofs, Wallets, Deposits, Withdrawals)
+│   │   ├── schema.prisma             # Relational data model (Users, Jobs, Tasks, Announcements, Advertisements, Wallets, Deposits, Withdrawals)
 │   │   └── seed.js                   # Categories, subcategories, countries, admin account, platform settings
 │   ├── src/
-│   │   ├── controllers/              # Auth, Job, Task, Wallet, Referral, Admin, Employer, Category, Support
-│   │   ├── middleware/               # Authentication (JWT + RBAC), Uploads, Rate Limiter, Error Handler
-│   │   ├── routes/                   # Modular Express API routing
-│   │   ├── utils/                    # Prisma client, Decimal safe math, cleanup routine (30-day proof purge)
+│   │   ├── config/                   # Cloudflare R2 S3 client configuration
+│   │   ├── controllers/              # Promotion, Auth, Job, Task, Wallet, Referral, Admin, Employer, Category, Support
+│   │   ├── middleware/               # Auth (JWT + RBAC), Uploads (Multer), Error Handler
+│   │   ├── routes/                   # Promotion, Auth, Job, Task, Wallet, Notification, Upload, Admin, Employer, Category, Support
+│   │   ├── utils/                    # Prisma client, SSE Realtime manager, JWT, Cleanup routine
 │   │   ├── app.js                    # Express app configuration & middleware
-│   │   └── server.js                 # HTTP server entrypoint & cleanup background scheduler
-│   ├── uploads/                      # Proof upload staging directory
+│   │   └── server.js                 # HTTP server entrypoint & SSE heartbeat scheduler
+│   ├── uploads/                      # Upload staging directory (proofs, ads)
 │   ├── .env.example                  # Environment variable template
 │   └── package.json
 │
@@ -76,160 +107,95 @@
 
 ---
 
-## 👥 Role Capabilities
+## 🔑 Environment Configuration
 
-### 💼 Workers
-- **Explore & Filter**: Filter jobs by category, subcategory, reward rate, and estimated completion time.
-- **Proof Submission**: Submit required text, URLs, and image screenshots (client-side base64 encoded).
-- **Task Tracking**: Real-time status tracking (`PENDING`, `APPROVED`, `REJECTED`, `RESUBMIT_REQUIRED`).
-- **Interactive Lightbox**: Click any submitted thumbnail in task history to view full-resolution screenshots with zoom controls.
-- **Wallet & Payouts**: Request payouts via bKash or Nagad with minimum threshold enforcement and live BDT conversion.
-- **Affiliate Program**: Share custom referral link to earn 5% task commission on referred users' approved work.
+### Backend (`backend/.env`)
+```env
+NODE_ENV=development
+PORT=5000
 
-### 🏢 Employers
-- **Campaign Creation**: Multi-step wizard to define worker targets, instructions, custom proof requirements, and deadlines.
-- **Budget Escrow**: Automatic calculation of base worker budget, platform fee (10%), screenshot fee (3%), and optional visibility boost.
-- **Submission Review**: Inspect submitted proof text, URLs, and screenshots in the built-in image lightbox.
-- **Decision Workflow**: One-click Approve (disburses payment instantly), Reject (with mandatory reason), or Request Resubmission.
-- **Deposit Funds**: Deposit wallet balance through bKash / Nagad by submitting payment transaction IDs.
+# Database
+DATABASE_URL="mysql://<user>:<password>@<host>:<port>/<dbname>?ssl-mode=REQUIRED"
 
-### 🛡️ Admins & Moderators
-- **Financial Controls**: Verify and approve manual deposits, review and process worker withdrawal requests.
-- **Job Moderation**: Review pending campaigns, pause, edit, or reject violating job postings.
-- **User Management**: Adjust user balances with automated immutable audit logging; suspend or ban bad actors.
-- **Dynamic Platform Settings**: Update minimum withdrawal, minimum deposit (`min_deposit_amount`), boost fees, and referral commission rates without redeploying.
-- **Support Desk**: Manage customer support tickets with priority assignment and threaded messaging.
+# JWT Secrets
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRES_IN=7d
+REFRESH_TOKEN_SECRET=your-refresh-secret
+REFRESH_TOKEN_EXPIRES_IN=30d
 
----
+# Frontend URL (CORS)
+FRONTEND_URL=http://localhost:5173
 
-## 🚀 Getting Started Locally
+# File Upload Limits
+MAX_FILE_SIZE_MB=10
 
-### Prerequisites
-- **Node.js** v18.0.0 or higher
-- **npm** v9.0.0 or higher
-- A **MySQL database** (local instance or free cloud database on [Aiven for MySQL](https://aiven.io/))
+# Cloudflare R2 (Optional - defaults to local disk if absent)
+R2_ACCOUNT_ID=your-r2-account-id
+R2_ACCESS_KEY_ID=your-r2-access-key-id
+R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
+R2_BUCKET_NAME=tomarkaj-uploads
+R2_PUBLIC_BASE_URL=https://pub-your-bucket-id.r2.dev
+```
 
----
-
-### 1. Configure Backend
-
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-
-2. Copy the sample environment file:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Configure your `backend/.env` file:
-   ```env
-   PORT=5000
-   DATABASE_URL="mysql://<USER>:<PASSWORD>@<HOST>:<PORT>/<DATABASE>?ssl-mode=REQUIRED"
-   JWT_SECRET=your-super-secure-jwt-secret-key
-   JWT_EXPIRES_IN=15m
-   REFRESH_TOKEN_SECRET=your-super-secure-refresh-token-secret
-   REFRESH_TOKEN_EXPIRES_IN=7d
-   FRONTEND_URL=http://localhost:5173
-   NODE_ENV=development
-   ```
-
-4. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-5. Push Prisma schema and seed initial data:
-   ```bash
-   npm run db:push
-   npm run db:seed
-   ```
-
-6. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
-   The backend API will start on **`http://localhost:5000`**.
+### Frontend (`frontend/.env`)
+```env
+VITE_API_URL=http://localhost:5000/api
+```
 
 ---
 
-### 2. Configure Frontend
+## 🚀 Quick Start (Local Development)
 
-1. Navigate to the frontend directory:
-   ```bash
-   cd ../frontend
-   ```
+### 1. Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+- MySQL Database (local or cloud like Aiven)
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### 2. Backend Setup
+```bash
+cd backend
+npm install
+npm run db:push     # Synchronizes Prisma schema with database
+npm run dev         # Starts API on http://localhost:5000
+```
 
-3. Create `frontend/.env` (optional for local, defaults to port 5000):
-   ```env
-   VITE_API_URL=http://localhost:5000/api
-   ```
-
-4. Start the frontend development server:
-   ```bash
-   npm run dev
-   ```
-   The application will be accessible at **`http://localhost:5173`**.
-
----
-
-
-
-
-## 📜 Available NPM Scripts
-
-### Backend (`backend/package.json`)
-| Script | Command | Purpose |
-|---|---|---|
-| `npm run dev` | `node --watch src/server.js` | Runs backend in watch mode (auto-reload on code change) |
-| `npm start` | `node src/server.js` | Starts backend production server |
-| `npm run build` | `prisma generate` | Generates the Prisma client library |
-| `npm run db:push` | `prisma db push` | Pushes schema changes directly to the database |
-| `npm run db:seed` | `node prisma/seed.js` | Populates categories, countries, admin user, and settings |
-
-### Frontend (`frontend/package.json`)
-| Script | Command | Purpose |
-|---|---|---|
-| `npm run dev` | `vite` | Starts Vite development server |
-| `npm run build` | `vite build` | Compiles production assets into `dist/` |
-| `npm run preview` | `vite preview` | Previews the production build locally |
-| `npm run lint` | `oxlint` | High-performance code linting |
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev         # Starts Vite dev server on http://localhost:5173
+```
 
 ---
 
-## 🌐 Production Deployment
+## 📡 API Overview (Promotions & Announcements)
 
-For complete, step-by-step production instructions, see [DEPLOYMENT.md](file:///c:/Users/User/Desktop/Website/DEPLOYMENT.md).
-
-### Quick Deployment Overview:
-1. **Database**: Provision a MySQL instance on [Aiven](https://aiven.io/). Copy the URI with `?ssl-mode=REQUIRED`.
-2. **Backend**: Deploy `backend/` as a Web Service on [Render](https://render.com/).
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
-   - Run `npm run db:push` and `npm run db:seed` from the Render Shell.
-3. **Frontend**: Deploy `frontend/` on [Vercel](https://vercel.com/).
-   - **Framework Preset**: `Vite`
-   - **Output Directory**: `dist`
-   - **Environment Variable**: `VITE_API_URL=https://<your-render-app>.onrender.com/api`
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/promotions/active` | Public / Worker | Fetches the current active announcement and active advertisement |
+| `GET` | `/api/promotions/admin/announcements` | Admin Only | Lists all announcements |
+| `POST` | `/api/promotions/admin/announcements` | Admin Only | Creates a new announcement and broadcasts via SSE |
+| `PATCH` | `/api/promotions/admin/announcements/:id` | Admin Only | Updates announcement text / active state |
+| `DELETE` | `/api/promotions/admin/announcements/:id` | Admin Only | Deletes announcement and updates worker view |
+| `GET` | `/api/promotions/admin/advertisements` | Admin Only | Lists all advertisements |
+| `POST` | `/api/promotions/admin/advertisements/upload-image` | Admin Only | Uploads ad banner image with MIME & size validation |
+| `POST` | `/api/promotions/admin/advertisements` | Admin Only | Creates advertisement with validated destination URL |
+| `PATCH` | `/api/promotions/admin/advertisements/:id` | Admin Only | Updates advertisement details & handles safe image replacement |
+| `DELETE` | `/api/promotions/admin/advertisements/:id` | Admin Only | Deletes advertisement and deletes image from storage |
 
 ---
 
-## 🔒 Security & Data Integrity
+## 🧪 Verification & Security Audits
 
-- **Double-Payment & Concurrency Protection**: Atomic Prisma transactions prevent race conditions during budget deductions, escrow locks, and task approvals.
-- **Client-Side Image Optimization**: Proof images are compressed and encoded to base64 before upload, saving bandwidth and avoiding file system dependencies.
-- **Automated Proof Lifecycle**: Submitted proofs are automatically cleaned up after 30 days via background cron, conserving database space.
-- **Granular RBAC Middleware**: Strict role-based route guards isolate Worker, Employer, and Admin APIs.
-- **Security Headers & Rate Limiting**: Powered by Helmet, CORS origin validation, and express-rate-limit.
+The project includes thorough verification covering:
+- **RBAC Authorization**: Non-admin users (Workers and Employers) receive `403 Forbidden` on admin promotion endpoints.
+- **Protocol Sanitization**: Injection attempts via `javascript:`, `data:`, `vbscript:`, and `file:` protocols are blocked server-side.
+- **SSE Delivery**: Automatic verification of real-time payload transmission to active worker connections.
+- **Asset Integrity**: Safe replacement workflow ensures zero orphaned files and zero broken image links.
+- **Regression Tested**: Complete validation of Worker job browsing, task submissions, wallet operations, Employer campaigns, and Admin moderation queues.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [ISC License](LICENSE).
+This project is proprietary and confidential. All rights reserved © 2026 Tomar Kaj.

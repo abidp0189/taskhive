@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Sparkles,
   Camera,
-  Percent
+  Percent,
+  Megaphone
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -49,6 +50,12 @@ export const AdminDashboard = () => {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            to="/admin/promotions"
+            className="flex items-center gap-2 rounded-xl bg-pink-600 hover:bg-pink-500 px-4 py-2.5 text-xs font-bold text-white shadow transition-all hover:scale-105"
+          >
+            <Megaphone className="h-4 w-4" /> Announcements & Ads
+          </Link>
           <Link
             to="/admin/categories"
             className="flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-2.5 text-xs font-bold text-white shadow transition-all hover:scale-105"
@@ -178,7 +185,20 @@ export const AdminDashboard = () => {
       </div>
 
       {/* Quick Access Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Link
+          to="/admin/promotions"
+          className="glass-card rounded-2xl p-5 hover:border-pink-500/50 transition-all flex items-center gap-4 group"
+        >
+          <div className="h-10 w-10 rounded-xl bg-pink-950/80 border border-pink-800 text-pink-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Megaphone className="h-5 w-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-white group-hover:text-pink-400 transition-colors">Promotions & Ads</h4>
+            <p className="text-xs text-gray-400 mt-0.5">Worker announcements & banner</p>
+          </div>
+        </Link>
+
         <Link
           to="/admin/categories"
           className="glass-card rounded-2xl p-5 hover:border-purple-500/50 transition-all flex items-center gap-4 group"

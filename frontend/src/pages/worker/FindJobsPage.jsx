@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Filter, Zap, ArrowRight, Globe, Layers, Pin, ShieldCheck } from 'lucide-react';
 import { Badge } from '../../components/common/Badge';
+import { WorkerPromoSection } from '../../components/worker/WorkerPromoSection';
 import api from '../../services/api';
 
 export const FindJobsPage = () => {
@@ -78,6 +79,9 @@ export const FindJobsPage = () => {
           Explore and complete high-paying microtasks with instant escrow verification.
         </p>
       </div>
+
+      {/* Admin Announcement & Advertisement Section */}
+      <WorkerPromoSection />
 
       {/* Search & Filter Bar */}
       <div className="glass-panel rounded-3xl p-4 sm:p-6 space-y-4">

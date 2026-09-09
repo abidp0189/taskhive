@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/admin.routes');
 const employerRoutes = require('./routes/employer.routes');
 const categoryRoutes = require('./routes/category.routes');
 const supportRoutes = require('./routes/support.routes');
+const promotionRoutes = require('./routes/promotion.routes');
 const { errorHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -117,6 +118,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/employer', employerRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/promotions', promotionRoutes);
 
 // ─── 404 ─────────────────────────────────────────
 app.use((req, res) => {

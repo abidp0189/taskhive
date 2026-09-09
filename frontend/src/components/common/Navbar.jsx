@@ -197,6 +197,16 @@ export const Navbar = () => {
                     Dashboard
                   </Link>
                   <Link
+                    to="/admin/promotions"
+                    className={`px-3 py-2 text-sm font-semibold rounded-xl transition-all ${
+                      isActive('/admin/promotions') 
+                        ? 'text-white bg-rose-600 shadow-sm' 
+                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface2)]'
+                    }`}
+                  >
+                    Promotions
+                  </Link>
+                  <Link
                     to="/admin/categories"
                     className={`px-3 py-2 text-sm font-semibold rounded-xl transition-all ${
                       isActive('/admin/categories') 
@@ -458,6 +468,7 @@ export const Navbar = () => {
               {user.role === 'ADMIN' && (
                 <>
                   <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface2)] rounded-lg">Admin Overview</Link>
+                  <Link to="/admin/promotions" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface2)] rounded-lg">Promotions & Ads</Link>
                   <Link to="/admin/categories" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface2)] rounded-lg">Categories & Subcategories</Link>
                   <Link to="/admin/users" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface2)] rounded-lg">User Management</Link>
                   <Link to="/admin/jobs" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface2)] rounded-lg">Job Moderation</Link>

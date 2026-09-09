@@ -696,3 +696,36 @@ model TicketMessage {
 
   @@index([ticketId])
 }
+
+// ─────────────────────────────────────────────
+// ANNOUNCEMENT (Admin broadcast to workers)
+// ─────────────────────────────────────────────
+
+model Announcement {
+
+  id        String   @id @default(uuid())
+  message   String   @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// ─────────────────────────────────────────────
+// ADVERTISEMENT (Admin banner for workers)
+// ─────────────────────────────────────────────
+
+model Advertisement {
+  id             String   @id @default(uuid())
+  title          String?
+  imageUrl       String   @db.MediumText
+  imageKey       String?
+  destinationUrl String   @db.Text
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive])
+}
+

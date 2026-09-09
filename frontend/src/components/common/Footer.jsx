@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Send, X, Copy, Check, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { TELEGRAM_LINK } from '../../config/constants';
 
 export const Footer = () => {
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const telegramLink = 'https://t.me/+TZB6c_pdeYVjNmE1';
+  const telegramLink = TELEGRAM_LINK;
 
   const handleCopyTelegram = () => {
     navigator.clipboard.writeText(telegramLink);

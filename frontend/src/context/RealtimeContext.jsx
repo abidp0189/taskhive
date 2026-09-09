@@ -129,6 +129,10 @@ export const RealtimeProvider = ({ children }) => {
       handleDomainEvent('submission:rejected', 'tk:submission-rejected');
       handleDomainEvent('submission:resubmit_required', 'tk:submission-resubmit-required');
       handleDomainEvent('wallet:updated', 'tk:wallet-updated');
+      handleDomainEvent('announcement:updated', 'tk:announcement-updated');
+      handleDomainEvent('announcement:deleted', 'tk:announcement-deleted');
+      handleDomainEvent('advertisement:updated', 'tk:advertisement-updated');
+      handleDomainEvent('advertisement:deleted', 'tk:advertisement-deleted');
 
       es.onerror = () => {
         // SSE handles reconnection automatically, but if closed, reconnect after delay
