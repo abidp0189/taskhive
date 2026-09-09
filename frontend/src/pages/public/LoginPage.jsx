@@ -129,28 +129,9 @@ export const LoginPage = () => {
           </div>
 
           {loginError && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{loginError}</span>
-              </div>
-
-              {/* Forgot password hint — only for Worker / Employer */}
-              {showForgotHint && activeRole !== 'ADMIN' && (
-                <div
-                  className="flex items-center justify-center gap-1.5"
-                  style={{ animation: 'fadeInUp 0.35s ease both' }}
-                >
-                  <KeyRound className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
-                  <span className="text-xs text-[var(--color-text-secondary)]">Forgot your password?</span>
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs font-bold text-[var(--color-btn-primary)] hover:underline underline-offset-2 transition-all"
-                  >
-                    Reset it here →
-                  </Link>
-                </div>
-              )}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{loginError}</span>
             </div>
           )}
 
@@ -213,6 +194,23 @@ export const LoginPage = () => {
               </>
             )}
           </button>
+
+          {/* Forgot password hint — shown at bottom after a failed login, Worker/Employer only */}
+          {showForgotHint && activeRole !== 'ADMIN' && (
+            <div
+              className="flex items-center justify-center gap-1.5 pt-1"
+              style={{ animation: 'fadeInUp 0.35s ease both' }}
+            >
+              <KeyRound className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
+              <span className="text-xs text-[var(--color-text-secondary)]">Forgot your password?</span>
+              <Link
+                to="/forgot-password"
+                className="text-xs font-bold text-[var(--color-btn-primary)] hover:underline underline-offset-2 transition-all"
+              >
+                Reset it here →
+              </Link>
+            </div>
+          )}
 
           <div className="text-center pt-2">
             <p className="text-xs text-[var(--color-text-secondary)] font-medium">
