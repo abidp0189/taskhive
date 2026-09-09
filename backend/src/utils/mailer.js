@@ -12,15 +12,34 @@ function getTransporter() {
     return null; // Will fall back to console logging
   }
 
-  _transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: parseInt(SMTP_PORT || '587', 10),
-    secure: parseInt(SMTP_PORT || '587', 10) === 465,
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
-    },
-  });
+  const cleanPass = SMTP_PASS.replace(/\s+/g, '');
+  const isGmail = (SMTP_HOST && SMTP_HOST.includes('gmail')) || (SMTP_USER && SMTP_USER.endsWith('@gmail.com'));
+
+  if (isGmail) {
+    _transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: SMTP_USER,
+        pass: cleanPass,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
+  } else {
+    _transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: parseInt(SMTP_PORT || '587', 10),
+      secure: parseInt(SMTP_PORT || '587', 10) === 465,
+      auth: {
+        user: SMTP_USER,
+        pass: cleanPass,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
+  }
 
   return _transporter;
 }
@@ -34,7 +53,8 @@ function getTransporter() {
  * @param {string} userName  - Recipient display name
  */
 async function sendPasswordResetEmail(toEmail, resetLink, userName) {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@tomarkaj.com';
+  const senderEmail = process.env.SMTP_USER || 'no-reply@tomarkaj.com';
+  const replyTo = process.env.SMTP_FROM || 'no-reply@tomarkaj.com';
   const subject = 'Reset Your Tomar Kaj Password';
 
   const html = `
@@ -122,7 +142,8 @@ async function sendPasswordResetEmail(toEmail, resetLink, userName) {
   }
 
   const info = await transporter.sendMail({
-    from: `"Tomar Kaj" <${from}>`,
+    from: `"Tomar Kaj" <${senderEmail}>`,
+    replyTo,
     to: toEmail,
     subject,
     text,

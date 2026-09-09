@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Zap, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
 
 export const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get('token') || '';
+  const rawToken = searchParams.get('token') || '';
+  const token = rawToken.trim();
+
+  const [verifying, setVerifying] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
+  const [tokenError, setTokenError] = useState('');
+  const [userInfo, setUserInfo] = useState({ name: '', email: '' });
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -14,22 +20,53 @@ export const ResetPasswordPage = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+
+  useEffect(() => {
+    if (!token) {
+      setVerifying(false);
+      setTokenValid(false);
+      setTokenError('This reset link is missing a valid security token.');
+      return;
+    }
+
+    const checkToken = async () => {
+      setVerifying(true);
+      try {
+        const res = await api.get(`/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
+        setTokenValid(true);
+        if (res.data?.data) {
+          setUserInfo({
+            name: res.data.data.name || '',
+            email: res.data.data.email || '',
+          });
+        }
+      } catch (err) {
+        setTokenValid(false);
+        const msg = err?.response?.data?.message || 'This reset link is invalid or has expired.';
+        setTokenError(msg);
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    checkToken();
+  }, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setSubmitError('');
 
     if (!token) {
-      setError('Invalid or missing reset token. Please request a new reset link.');
+      setSubmitError('Invalid reset token. Please request a new reset link.');
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setSubmitError('Password must be at least 8 characters.');
       return;
     }
     if (password !== confirm) {
-      setError('Passwords do not match.');
+      setSubmitError('Passwords do not match.');
       return;
     }
 
@@ -37,40 +74,14 @@ export const ResetPasswordPage = () => {
     try {
       await api.post('/auth/reset-password', { token, password });
       setSuccess(true);
-      // Redirect to login after 2.5s
       setTimeout(() => navigate('/login', { replace: true }), 2500);
     } catch (err) {
-      const msg = err?.response?.data?.message || 'This reset link is invalid or has expired. Please request a new one.';
-      setError(msg);
+      const msg = err?.response?.data?.message || 'Failed to reset password. Please request a new reset link.';
+      setSubmitError(msg);
     } finally {
       setLoading(false);
     }
   };
-
-  // No token in URL
-  if (!token) {
-    return (
-      <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 bg-[var(--color-background)]">
-        <div className="w-full max-w-md">
-          <div className="glass-panel rounded-3xl p-8 shadow-2xl border border-[var(--color-border)] text-center space-y-4">
-            <div className="h-14 w-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto">
-              <AlertCircle className="h-7 w-7 text-rose-400" />
-            </div>
-            <p className="text-base font-bold text-white">Invalid Reset Link</p>
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              This reset link is missing or malformed. Please request a new one.
-            </p>
-            <Link
-              to="/forgot-password"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--color-btn-primary)] hover:underline"
-            >
-              Request a new reset link →
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[var(--color-background)] transition-colors duration-300">
@@ -94,7 +105,42 @@ export const ResetPasswordPage = () => {
         {/* Card */}
         <div className="glass-panel rounded-3xl p-7 sm:p-8 shadow-2xl border border-[var(--color-border)]">
 
-          {success ? (
+          {verifying ? (
+            /* ── Verifying state ── */
+            <div className="flex flex-col items-center gap-4 text-center py-8">
+              <div className="h-12 w-12 animate-spin rounded-full border-3 border-[var(--color-btn-primary)] border-t-transparent mx-auto" />
+              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                Verifying your reset link…
+              </p>
+            </div>
+          ) : !tokenValid ? (
+            /* ── Invalid / Expired / Used token state ── */
+            <div className="flex flex-col items-center gap-4 text-center py-4 space-y-2">
+              <div className="h-16 w-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto">
+                <AlertCircle className="h-8 w-8 text-rose-400" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-[var(--color-text)] mb-1">Reset Link Unavailable</p>
+                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed max-w-xs mx-auto">
+                  {tokenError}
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col gap-2 w-full">
+                <Link
+                  to="/forgot-password"
+                  className="w-full crystal-btn flex items-center justify-center gap-2 rounded-full py-3 text-xs font-extrabold uppercase tracking-widest bg-[var(--color-btn-primary)] hover:bg-[var(--color-btn-primary-hover)] text-[var(--color-btn-text)] shadow-lg transition-all"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> Request a New Reset Link
+                </Link>
+                <Link
+                  to="/login"
+                  className="text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text)] pt-1 transition-colors"
+                >
+                  ← Back to Sign In
+                </Link>
+              </div>
+            </div>
+          ) : success ? (
             /* ── Success state ── */
             <div
               className="flex flex-col items-center gap-4 text-center py-4"
@@ -119,16 +165,21 @@ export const ResetPasswordPage = () => {
           ) : (
             /* ── Form state ── */
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="pb-3 border-b border-[var(--color-border)]">
+              <div className="pb-3 border-b border-[var(--color-border)] flex items-center justify-between">
                 <span className="text-xs font-extrabold text-[var(--color-text)] uppercase tracking-wider">
                   🔐 Create New Password
                 </span>
+                {userInfo.email && (
+                  <span className="text-[11px] text-[var(--color-text-secondary)] font-medium truncate max-w-[180px]">
+                    {userInfo.email}
+                  </span>
+                )}
               </div>
 
-              {error && (
+              {submitError && (
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                  <span>{submitError}</span>
                 </div>
               )}
 
@@ -145,7 +196,7 @@ export const ResetPasswordPage = () => {
                     id="new-password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                    onChange={(e) => { setPassword(e.target.value); setSubmitError(''); }}
                     placeholder="Minimum 8 characters"
                     autoComplete="new-password"
                     autoFocus
@@ -181,7 +232,7 @@ export const ResetPasswordPage = () => {
                     id="confirm-password"
                     type={showConfirm ? 'text' : 'password'}
                     value={confirm}
-                    onChange={(e) => { setConfirm(e.target.value); setError(''); }}
+                    onChange={(e) => { setConfirm(e.target.value); setSubmitError(''); }}
                     placeholder="Re-enter your new password"
                     autoComplete="new-password"
                     required

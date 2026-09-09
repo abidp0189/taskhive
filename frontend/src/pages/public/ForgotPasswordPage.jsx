@@ -19,11 +19,10 @@ export const ForgotPasswordPage = () => {
     setLoading(true);
     try {
       await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
-      // Always show success — backend never reveals if email exists
       setSent(true);
-    } catch {
-      // Even on network/server error, show a neutral message to avoid enumeration
-      setSent(true);
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Failed to send reset link. Please check your network and try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
