@@ -290,18 +290,20 @@ export const Navbar = () => {
 
             {user ? (
               <>
-                {/* Wallet Balance Pill */}
-                <Link
-                  to={user.role === 'EMPLOYER' ? '/employer/wallet' : '/wallet'}
-                  className="flex items-center gap-2 rounded-xl bg-[var(--color-surface2)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:border-[var(--color-text)] transition-all shadow-sm"
-                >
-                  <WalletIcon className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>
-                    {user.role === 'EMPLOYER'
-                      ? `Deposit: $${(parseFloat(wallet?.depositBalance || 0)).toFixed(2)}`
-                      : `Earned: $${(parseFloat(wallet?.availableBalance || 0)).toFixed(2)}`}
-                  </span>
-                </Link>
+                {/* Wallet Balance Pill — only for WORKER and EMPLOYER */}
+                {(user.role === 'WORKER' || user.role === 'EMPLOYER') && (
+                  <Link
+                    to={user.role === 'EMPLOYER' ? '/employer/wallet' : '/wallet'}
+                    className="flex items-center gap-2 rounded-xl bg-[var(--color-surface2)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:border-[var(--color-text)] transition-all shadow-sm"
+                  >
+                    <WalletIcon className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>
+                      {user.role === 'EMPLOYER'
+                        ? `Deposit: $${(parseFloat(wallet?.depositBalance || 0)).toFixed(2)}`
+                        : `Earned: $${(parseFloat(wallet?.availableBalance || 0)).toFixed(2)}`}
+                    </span>
+                  </Link>
+                )}
 
                 {/* Notifications Dropdown */}
                 <NotificationDropdown />
@@ -385,7 +387,7 @@ export const Navbar = () => {
           {/* Mobile menu button & actions */}
           <div className="flex md:hidden items-center gap-1.5">
             {/* Mobile Wallet Balance Pill */}
-            {user && (
+            {user && (user.role === 'WORKER' || user.role === 'EMPLOYER') && (
               <Link
                 to={user.role === 'EMPLOYER' ? '/employer/wallet' : '/wallet'}
                 className="flex items-center gap-1 rounded-lg bg-[var(--color-surface2)] border border-[var(--color-border)] px-2 py-1 text-[11px] font-bold text-[var(--color-text)] shrink-0"
@@ -437,11 +439,13 @@ export const Navbar = () => {
                   <p className="text-sm font-bold text-[var(--color-text)] truncate">{user.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge variant="primary" className="text-[10px] py-0 px-1.5">{user.role}</Badge>
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                      {user.role === 'EMPLOYER'
-                        ? `Deposit: $${(parseFloat(wallet?.depositBalance || 0)).toFixed(2)}`
-                        : `Earned: $${(parseFloat(wallet?.availableBalance || 0)).toFixed(2)}`}
-                    </span>
+                    {(user.role === 'WORKER' || user.role === 'EMPLOYER') && (
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        {user.role === 'EMPLOYER'
+                          ? `Deposit: $${(parseFloat(wallet?.depositBalance || 0)).toFixed(2)}`
+                          : `Earned: $${(parseFloat(wallet?.availableBalance || 0)).toFixed(2)}`}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

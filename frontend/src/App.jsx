@@ -91,7 +91,7 @@ function AppContent() {
           </Route>
 
           {/* Worker Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['WORKER', 'ADMIN']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['WORKER']} />}>
             <Route path="/dashboard" element={<WorkerDashboard />} />
             <Route path="/my-tasks" element={<MyTasksPage />} />
             <Route path="/my-tasks/:id" element={<JobDetailsPage />} />
@@ -101,7 +101,7 @@ function AppContent() {
           </Route>
 
           {/* Employer Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['EMPLOYER', 'ADMIN']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['EMPLOYER']} />}>
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
             <Route path="/employer/jobs" element={<MyJobsPage />} />
             <Route path="/employer/jobs/new" element={<CreateJobWizard />} />
