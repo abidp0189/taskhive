@@ -198,9 +198,9 @@ The project includes thorough verification covering:
 
 ## 👨‍💻 Developer Information
 
-- **Developer**: **Azizul Islam**
+- **Developer**: **MD. AZIZUL ISLAM**
 - **Portfolio**: [https://portfolio-azizul-islam.vercel.app/](https://portfolio-azizul-islam.vercel.app/)
-- **GitHub**: [@abidp0189](https://github.com/abidp0189)
+- **GitHub**: https://github.com/Azizul-Islam-Efath
 
 ---
 
