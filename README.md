@@ -196,6 +196,15 @@ The project includes thorough verification covering:
 
 ---
 
+## 👨‍💻 Developer Information
+
+- **Developer**: **Azizul Islam**
+- **Portfolio**: [https://portfolio-azizul-islam.vercel.app/](https://portfolio-azizul-islam.vercel.app/)
+- **GitHub**: [@abidp0189](https://github.com/abidp0189)
+
+---
+
 ## 📄 License
 
 This project is proprietary and confidential. All rights reserved © 2026 Tomar Kaj.
+
