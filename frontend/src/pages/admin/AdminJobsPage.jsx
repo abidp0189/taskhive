@@ -24,6 +24,26 @@ export const AdminJobsPage = () => {
 
   useEffect(() => {
     fetchJobs();
+
+    const handleJobChange = () => {
+      fetchJobs();
+    };
+
+    window.addEventListener('tk:job-created', handleJobChange);
+    window.addEventListener('tk:job-updated', handleJobChange);
+    window.addEventListener('tk:job-approved', handleJobChange);
+    window.addEventListener('tk:job-rejected', handleJobChange);
+    window.addEventListener('tk:job-paused', handleJobChange);
+    window.addEventListener('tk:job-resumed', handleJobChange);
+
+    return () => {
+      window.removeEventListener('tk:job-created', handleJobChange);
+      window.removeEventListener('tk:job-updated', handleJobChange);
+      window.removeEventListener('tk:job-approved', handleJobChange);
+      window.removeEventListener('tk:job-rejected', handleJobChange);
+      window.removeEventListener('tk:job-paused', handleJobChange);
+      window.removeEventListener('tk:job-resumed', handleJobChange);
+    };
   }, [statusFilter]);
 
   const handleUpdateStatus = async (jobId, status) => {

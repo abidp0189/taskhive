@@ -23,6 +23,24 @@ export const MyJobsPage = () => {
 
   useEffect(() => {
     fetchJobs();
+
+    const handleJobChange = () => {
+      fetchJobs();
+    };
+
+    window.addEventListener('tk:job-approved', handleJobChange);
+    window.addEventListener('tk:job-rejected', handleJobChange);
+    window.addEventListener('tk:job-paused', handleJobChange);
+    window.addEventListener('tk:job-resumed', handleJobChange);
+    window.addEventListener('tk:job-updated', handleJobChange);
+
+    return () => {
+      window.removeEventListener('tk:job-approved', handleJobChange);
+      window.removeEventListener('tk:job-rejected', handleJobChange);
+      window.removeEventListener('tk:job-paused', handleJobChange);
+      window.removeEventListener('tk:job-resumed', handleJobChange);
+      window.removeEventListener('tk:job-updated', handleJobChange);
+    };
   }, []);
 
   const handleAction = async (jobId, action) => {

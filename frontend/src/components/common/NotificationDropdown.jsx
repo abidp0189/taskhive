@@ -34,8 +34,21 @@ export const NotificationDropdown = () => {
   useEffect(() => {
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const handleNewNotif = () => {
+      fetchUnread();
+      if (isOpen) {
+        fetchNotifications();
+      }
+    };
+
+    window.addEventListener('tk:notification-new', handleNewNotif);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('tk:notification-new', handleNewNotif);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {

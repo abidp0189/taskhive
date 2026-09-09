@@ -125,6 +125,9 @@ enum NotificationType {
   TASK_APPROVED
   TASK_REJECTED
   TASK_RESUBMIT
+  TASK_SUBMITTED
+  JOB_POSTED
+  JOB_APPROVED
   JOB_PAUSED
   JOB_COMPLETED
   JOB_REJECTED
@@ -314,10 +317,10 @@ model Job {
   employerId            String
   categoryId            String
   subcategoryId         String?
-  title                 String
-  shortDescription      String?
-  instructions          String
-  proofRequirements     String
+  title                 String        @db.Text
+  shortDescription      String?       @db.Text
+  instructions          String        @db.Text
+  proofRequirements     String        @db.Text
   proofTypes            String        @default("TEXT")  // comma-separated ProofType values
   requiresScreenshot    Boolean       @default(false)
   screenshotQuantity    Int           @default(1)
@@ -354,7 +357,7 @@ model Job {
   status             JobStatus     @default(DRAFT)
   visibility         JobVisibility @default(NORMAL)
   priority           Int           @default(0)
-  rejectionReason    String?
+  rejectionReason    String?       @db.Text
   taskExpiryHours    Int           @default(48)
   maxResubmissions   Int           @default(3)
   startAt            DateTime?
@@ -412,7 +415,7 @@ model TaskAssignment {
   submittedAt      DateTime?
   reviewedAt       DateTime?
   reviewerId       String?
-  rejectionReason  String?
+  rejectionReason  String?  @db.Text
   rewardAmount     Decimal
   resubmitCount    Int        @default(0)
   expiresAt        DateTime?
@@ -476,7 +479,7 @@ model WalletTransaction {
   status         TransactionStatus    @default(COMPLETED)
   referenceType  String?
   referenceId    String?
-  description    String?
+  description    String?  @db.Text
   balanceAfter   Decimal
   createdAt      DateTime             @default(now())
 
@@ -583,7 +586,7 @@ model Notification {
   userId    String
   type      NotificationType
   title     String
-  message   String
+  message   String           @db.Text
   link      String?
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())

@@ -80,6 +80,19 @@ export const ReviewSubmissionsPage = () => {
 
   useEffect(() => {
     fetchSubmissions();
+
+    const handleSubmissionCreated = (e) => {
+      // If event matches this jobId or no jobId filter, reload
+      if (!e.detail?.jobId || e.detail.jobId === jobId) {
+        fetchSubmissions();
+      }
+    };
+
+    window.addEventListener('tk:submission-created', handleSubmissionCreated);
+
+    return () => {
+      window.removeEventListener('tk:submission-created', handleSubmissionCreated);
+    };
   }, [jobId, statusFilter]);
 
   const handleApprove = async (subId) => {

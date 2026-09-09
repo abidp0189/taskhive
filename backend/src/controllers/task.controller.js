@@ -3,6 +3,8 @@ const { success, paginated, notFound, badRequest, error, forbidden } = require('
 const { asyncHandler } = require('../middleware/error.middleware');
 const path = require('path');
 const fs = require('fs');
+const realtime = require('../utils/realtime');
+const { sendToUser } = realtime;
 
 /**
  * GET /api/tasks - Worker's task list
@@ -197,15 +199,27 @@ const submitTask = asyncHandler(async (req, res) => {
     });
   }, { timeout: 30000, maxWait: 15000 });
 
-  // Notify employer
-  await prisma.notification.create({
+  // Notify employer and emit real-time
+  const employerNotif = await prisma.notification.create({
     data: {
       userId: assignment.job.employerId,
-      type: 'SYSTEM',
+      type: 'TASK_SUBMITTED',
       title: 'New Submission',
       message: `A worker submitted proof for your job "${assignment.job.title}"`,
       link: `/employer/jobs/${assignment.job.id}/submissions`,
     },
+  });
+
+  // Real-time: employer sees submission immediately
+  sendToUser(assignment.job.employerId, 'submission:created', {
+    jobId: assignment.job.id,
+    assignmentId: assignment.id,
+    jobTitle: assignment.job.title,
+  });
+  sendToUser(assignment.job.employerId, 'notification:new', {
+    id: employerNotif.id, type: employerNotif.type, title: employerNotif.title,
+    message: employerNotif.message, link: employerNotif.link, isRead: false,
+    createdAt: employerNotif.createdAt,
   });
 
   return success(res, {}, 'Proof submitted successfully. Awaiting review.');
@@ -422,6 +436,29 @@ const approveSubmission = asyncHandler(async (req, res) => {
     return { assignmentId, rewardAmount };
   }, { timeout: 30000, maxWait: 15000 });
 
+  // Real-time: notify worker their task was approved and wallet updated
+  try {
+    const approvedNotif = await prisma.notification.findFirst({
+      where: { userId: assignment.workerId, type: 'TASK_APPROVED' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (approvedNotif) {
+      sendToUser(assignment.workerId, 'notification:new', {
+        id: approvedNotif.id, type: approvedNotif.type, title: approvedNotif.title,
+        message: approvedNotif.message, link: approvedNotif.link, isRead: false,
+        createdAt: approvedNotif.createdAt,
+      });
+    }
+    sendToUser(assignment.workerId, 'submission:approved', { assignmentId: result.assignmentId });
+    // Signal wallet update so worker balance refreshes
+    const updatedWorkerWallet = await prisma.wallet.findUnique({ where: { userId: assignment.workerId }, select: { availableBalance: true } });
+    if (updatedWorkerWallet) {
+      sendToUser(assignment.workerId, 'wallet:updated', { availableBalance: parseFloat(updatedWorkerWallet.availableBalance) });
+    }
+  } catch (rtErr) {
+    console.error('[Task] Real-time emit error (approveSubmission):', rtErr.message);
+  }
+
   return success(res, result, 'Submission approved and reward credited to worker');
 });
 
@@ -521,6 +558,25 @@ const rejectSubmission = asyncHandler(async (req, res) => {
     });
   }, { timeout: 30000, maxWait: 15000 });
 
+  // Real-time: notify worker their task was rejected
+  try {
+    const rejectedNotif = await prisma.notification.findFirst({
+      where: { userId: assignment.workerId, type: 'TASK_REJECTED' },
+      orderBy: { createdAt: 'desc' },
+    });
+    realtime.sendToUser(assignment.workerId, 'submission:rejected', {
+      assignmentId,
+      jobId: assignment.jobId,
+      jobTitle: assignment.job.title,
+      reason,
+    });
+    if (rejectedNotif) {
+      realtime.sendToUser(assignment.workerId, 'notification:new', rejectedNotif);
+    }
+  } catch (rtErr) {
+    console.error('SSE emit error (submission:rejected):', rtErr.message);
+  }
+
   return success(res, {}, 'Submission rejected');
 });
 
@@ -567,6 +623,25 @@ const requestResubmit = asyncHandler(async (req, res) => {
       link: `/my-tasks/${assignmentId}`,
     },
   });
+
+  // Real-time: notify worker resubmission is required
+  try {
+    const resubmitNotif = await prisma.notification.findFirst({
+      where: { userId: assignment.workerId, type: 'TASK_RESUBMIT' },
+      orderBy: { createdAt: 'desc' },
+    });
+    realtime.sendToUser(assignment.workerId, 'submission:resubmit_required', {
+      assignmentId,
+      jobId: assignment.jobId,
+      jobTitle: assignment.job.title,
+      reason,
+    });
+    if (resubmitNotif) {
+      realtime.sendToUser(assignment.workerId, 'notification:new', resubmitNotif);
+    }
+  } catch (rtErr) {
+    console.error('SSE emit error (submission:resubmit_required):', rtErr.message);
+  }
 
   return success(res, {}, 'Resubmission requested');
 });

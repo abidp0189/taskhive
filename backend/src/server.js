@@ -2,11 +2,15 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const app = require('./app');
 const { cleanupExpiredProofs, cleanupExpiredJobs } = require('./utils/cleanup');
+const { startHeartbeat } = require('./utils/realtime');
 
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  
+  // Start SSE heartbeat
+  startHeartbeat();
   
   // Run automatic cleanups on startup
   cleanupExpiredProofs();

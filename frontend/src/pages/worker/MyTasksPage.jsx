@@ -31,6 +31,20 @@ export const MyTasksPage = () => {
 
   useEffect(() => {
     fetchTasks();
+
+    const handleRefresh = () => {
+      fetchTasks();
+    };
+
+    window.addEventListener('tk:submission-approved', handleRefresh);
+    window.addEventListener('tk:submission-rejected', handleRefresh);
+    window.addEventListener('tk:submission-resubmit-required', handleRefresh);
+
+    return () => {
+      window.removeEventListener('tk:submission-approved', handleRefresh);
+      window.removeEventListener('tk:submission-rejected', handleRefresh);
+      window.removeEventListener('tk:submission-resubmit-required', handleRefresh);
+    };
   }, [statusFilter]);
 
   const tabs = [

@@ -1,6 +1,7 @@
 const prisma = require('../utils/prisma');
 const { success, paginated, notFound, badRequest, error, forbidden } = require('../utils/response');
 const { asyncHandler } = require('../middleware/error.middleware');
+const { sendToUser, sendToRole } = require('../utils/realtime');
 
 // ─── Dashboard ───────────────────────────────────
 
@@ -241,13 +242,36 @@ const updateJobStatus = asyncHandler(async (req, res) => {
     await tx.notification.create({
       data: {
         userId: job.employerId,
-        type: status === 'ACTIVE' ? 'SYSTEM' : 'JOB_REJECTED',
+        type: status === 'ACTIVE' ? 'JOB_APPROVED' : 'JOB_REJECTED',
         title: `Job ${status === 'ACTIVE' ? 'Approved' : status}`,
         message: `Your job "${job.title}" status changed to ${status}${reason ? `. Reason: ${reason}` : ''}`,
         link: `/employer/jobs/${job.id}`,
       },
     });
   }, { timeout: 30000, maxWait: 15000 });
+
+  // Real-time: notify employer, broadcast updated job list to workers
+  try {
+    const updatedNotif = await prisma.notification.findFirst({
+      where: { userId: job.employerId, type: status === 'ACTIVE' ? 'JOB_APPROVED' : 'JOB_REJECTED' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (updatedNotif) {
+      sendToUser(job.employerId, 'notification:new', {
+        id: updatedNotif.id, type: updatedNotif.type, title: updatedNotif.title,
+        message: updatedNotif.message, link: updatedNotif.link, isRead: false,
+        createdAt: updatedNotif.createdAt,
+      });
+    }
+    const eventName = status === 'ACTIVE' ? 'job:approved' : 'job:rejected';
+    sendToUser(job.employerId, eventName, { jobId: req.params.id, status });
+    // Workers only need to know about newly active jobs
+    if (status === 'ACTIVE') {
+      sendToRole('WORKER', 'job:updated', { jobId: req.params.id, status: 'ACTIVE' });
+    }
+  } catch (rtErr) {
+    console.error('[Admin] Real-time emit error (updateJobStatus):', rtErr.message);
+  }
 
   return success(res, {}, `Job status updated to ${status}`);
 });
@@ -291,6 +315,24 @@ const adminPauseJob = asyncHandler(async (req, res) => {
     });
   }, { timeout: 30000, maxWait: 15000 });
 
+  // Real-time: notify employer of pause
+  try {
+    const pauseNotif = await prisma.notification.findFirst({
+      where: { userId: job.employerId, type: 'JOB_PAUSED' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (pauseNotif) {
+      sendToUser(job.employerId, 'notification:new', {
+        id: pauseNotif.id, type: pauseNotif.type, title: pauseNotif.title,
+        message: pauseNotif.message, link: pauseNotif.link, isRead: false,
+        createdAt: pauseNotif.createdAt,
+      });
+    }
+    sendToUser(job.employerId, 'job:paused', { jobId: req.params.id });
+  } catch (rtErr) {
+    console.error('[Admin] Real-time emit error (adminPauseJob):', rtErr.message);
+  }
+
   return success(res, {}, 'Job paused by admin');
 });
 
@@ -326,6 +368,25 @@ const adminResumeJob = asyncHandler(async (req, res) => {
       },
     });
   }, { timeout: 30000, maxWait: 15000 });
+
+  // Real-time: notify employer of resume
+  try {
+    const resumeNotif = await prisma.notification.findFirst({
+      where: { userId: job.employerId, type: 'SYSTEM' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (resumeNotif) {
+      sendToUser(job.employerId, 'notification:new', {
+        id: resumeNotif.id, type: resumeNotif.type, title: resumeNotif.title,
+        message: resumeNotif.message, link: resumeNotif.link, isRead: false,
+        createdAt: resumeNotif.createdAt,
+      });
+    }
+    sendToUser(job.employerId, 'job:updated', { jobId: req.params.id, status: 'ACTIVE' });
+    sendToRole('WORKER', 'job:updated', { jobId: req.params.id, status: 'ACTIVE' });
+  } catch (rtErr) {
+    console.error('[Admin] Real-time emit error (adminResumeJob):', rtErr.message);
+  }
 
   return success(res, {}, 'Job resumed by admin');
 });

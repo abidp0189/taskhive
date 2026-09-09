@@ -129,9 +129,17 @@ export const CreateJobWizard = () => {
     }));
   };
 
+  const normalizeBanglaDigits = (val) => {
+    if (val === null || val === undefined) return '';
+    const str = String(val);
+    const banglaDigits = {'০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
+    return str.replace(/[০-৯]/g, (d) => banglaDigits[d] || d);
+  };
+
   // Authoritative Budget Calculations
-  const reward = parseFloat(formData.rewardPerWorker) || 0;
-  const workers = parseInt(formData.totalWorkers) || 0;
+  const reward = parseFloat(normalizeBanglaDigits(formData.rewardPerWorker)) || 0;
+  const workers = parseInt(normalizeBanglaDigits(formData.totalWorkers), 10) || 0;
+  const estimatedDays = parseInt(normalizeBanglaDigits(formData.estimatedDays), 10) || 3;
   const baseWorkerBudget = reward * workers;
 
   const platformFeeRate = (parseFloat(config.platform_fee_percent) || 10) / 100;
@@ -232,7 +240,7 @@ export const CreateJobWizard = () => {
         targetUrl: formData.targetUrl || null,
         rewardPerWorker: reward,
         totalWorkers: workers,
-        estimatedDays: parseInt(formData.estimatedDays) || 3,
+        estimatedDays: estimatedDays,
         endAt: formData.durationMode === 'DATE' && formData.endAt ? formData.endAt : null,
         boostDuration: parseInt(formData.boostDuration) || 0,
         scheduledAt: formData.publishMode === 'SCHEDULE' ? formData.scheduledAt : null,

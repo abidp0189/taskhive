@@ -44,6 +44,22 @@ export const WorkerDashboard = () => {
     };
 
     fetchDashboardData();
+
+    const handleRefresh = () => {
+      fetchDashboardData();
+    };
+
+    window.addEventListener('tk:submission-approved', handleRefresh);
+    window.addEventListener('tk:submission-rejected', handleRefresh);
+    window.addEventListener('tk:submission-resubmit-required', handleRefresh);
+    window.addEventListener('tk:job-updated', handleRefresh);
+
+    return () => {
+      window.removeEventListener('tk:submission-approved', handleRefresh);
+      window.removeEventListener('tk:submission-rejected', handleRefresh);
+      window.removeEventListener('tk:submission-resubmit-required', handleRefresh);
+      window.removeEventListener('tk:job-updated', handleRefresh);
+    };
   }, []);
 
   const completedCount = activeTasks.filter(t => t.status === 'APPROVED').length;

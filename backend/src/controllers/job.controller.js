@@ -1,6 +1,17 @@
 const prisma = require('../utils/prisma');
 const { success, created, paginated, notFound, badRequest, error, forbidden } = require('../utils/response');
 const { asyncHandler } = require('../middleware/error.middleware');
+const { sendToRole, sendToUser } = require('../utils/realtime');
+
+/**
+ * Normalize Bangla/Bengali numerals (০-৯) to ASCII (0-9)
+ * so parseInt/parseFloat works correctly on Bengali input.
+ */
+function normalizeBanglaNumbers(str) {
+  if (typeof str !== 'string') return str;
+  const banglaDigits = '০১২৩৪৫৬৭৮৯';
+  return str.replace(/[০-৯]/g, (d) => banglaDigits.indexOf(d).toString());
+}
 
 const PAGE_SIZE = 20;
 
@@ -217,11 +228,30 @@ const createJob = asyncHandler(async (req, res) => {
   }
 
   const employerId = req.user.id;
-  const reward = parseFloat(rewardPerWorker);
-  const workers = parseInt(totalWorkers);
+  // Normalize Bengali digits to ASCII before parsing
+  const reward = parseFloat(normalizeBanglaNumbers(String(rewardPerWorker)));
+  const workers = parseInt(normalizeBanglaNumbers(String(totalWorkers)), 10);
+  const normalizedEstimatedDays = parseInt(normalizeBanglaNumbers(String(estimatedDays)), 10);
 
   if (isNaN(reward) || reward <= 0) return badRequest(res, 'Invalid reward per worker');
   if (isNaN(workers) || workers <= 0) return badRequest(res, 'Invalid worker quantity');
+  if (workers > 50000) return badRequest(res, 'Worker quantity cannot exceed 50,000');
+  if (isNaN(normalizedEstimatedDays) || normalizedEstimatedDays <= 0) return badRequest(res, 'Invalid job duration');
+  if (normalizedEstimatedDays > 365) return badRequest(res, 'Job duration cannot exceed 365 days');
+
+  // Validate endAt date if provided
+  if (endAt) {
+    const endDate = new Date(endAt);
+    if (isNaN(endDate.getTime())) return badRequest(res, 'Invalid end date');
+    if (endDate <= new Date()) return badRequest(res, 'End date must be in the future');
+  }
+
+  // Validate scheduledAt if provided
+  if (scheduledAt) {
+    const schedDate = new Date(scheduledAt);
+    if (isNaN(schedDate.getTime())) return badRequest(res, 'Invalid scheduled date');
+    if (schedDate <= new Date()) return badRequest(res, 'Scheduled date must be in the future');
+  }
 
   // Base worker budget
   const baseWorkerBudget = reward * workers;
@@ -265,7 +295,7 @@ const createJob = asyncHandler(async (req, res) => {
   }
 
   // Calculate timing & scheduling (Flexible duration without unnecessary fixed maximum ceiling)
-  const numEstimatedDays = parseInt(estimatedDays) > 0 ? parseInt(estimatedDays) : 3;
+  const numEstimatedDays = normalizedEstimatedDays > 0 ? normalizedEstimatedDays : 3;
   const isScheduled = scheduledAt && new Date(scheduledAt) > new Date();
   const jobScheduledAt = isScheduled ? new Date(scheduledAt) : null;
   const startTime = jobScheduledAt || new Date();
@@ -366,6 +396,60 @@ const createJob = asyncHandler(async (req, res) => {
 
     return newJob;
   }, { timeout: 30000, maxWait: 15000 });
+
+  // Notify all admins about the new job requiring review
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'MODERATOR'] }, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    const employer = await prisma.user.findUnique({
+      where: { id: employerId },
+      select: { name: true },
+    });
+
+    if (admins.length > 0) {
+      const adminNotifications = await prisma.$transaction(
+        admins.map((admin) =>
+          prisma.notification.create({
+            data: {
+              userId: admin.id,
+              type: 'JOB_POSTED',
+              title: 'New Job Posted',
+              message: `${employer?.name || 'An employer'} has posted "${job.title}". Review and approve or reject the job.`,
+              link: '/admin/jobs',
+            },
+          })
+        )
+      );
+
+      // Emit real-time to admin role
+      sendToRole('ADMIN', 'job:created', {
+        jobId: job.id,
+        title: job.title,
+        employerName: employer?.name || 'Unknown',
+      });
+      sendToRole('MODERATOR', 'job:created', {
+        jobId: job.id,
+        title: job.title,
+        employerName: employer?.name || 'Unknown',
+      });
+      adminNotifications.forEach((n) => {
+        sendToUser(n.userId, 'notification:new', {
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          link: n.link,
+          isRead: false,
+          createdAt: n.createdAt,
+        });
+      });
+    }
+  } catch (notifErr) {
+    // Notification failure must not affect job creation
+    console.error('[Job] Failed to create admin notifications:', notifErr.message);
+  }
 
   return created(res, job, isScheduled ? 'Job campaign scheduled successfully' : 'Job campaign created and submitted for review');
 });

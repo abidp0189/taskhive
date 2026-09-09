@@ -44,14 +44,16 @@ import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
 import { SupportTicketsPage } from './pages/support/SupportTicketsPage';
 
 import { ThemeProvider } from './context/ThemeContext';
+import { RealtimeProvider } from './context/RealtimeContext';
 
 export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] relative transition-colors duration-300">
-            <div className="aurora-overlay"></div>
+          <RealtimeProvider>
+            <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] relative transition-colors duration-300">
+              <div className="aurora-overlay"></div>
             <Toaster
               position="top-right"
               toastOptions={{
@@ -123,9 +125,10 @@ export function App() {
 
           <Footer />
         </div>
-      </BrowserRouter>
-    </AuthProvider>
-    </ThemeProvider>
+      </RealtimeProvider>
+    </BrowserRouter>
+  </AuthProvider>
+</ThemeProvider>
   );
 }
 
