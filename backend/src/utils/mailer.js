@@ -53,9 +53,14 @@ function getTransporter() {
  * @param {string} userName  - Recipient display name
  */
 async function sendPasswordResetEmail(toEmail, resetLink, userName) {
-  const senderEmail = process.env.SMTP_USER || 'no-reply@tomarkaj.com';
-  const replyTo = process.env.SMTP_FROM || 'no-reply@tomarkaj.com';
-  const subject = 'Reset Your Tomar Kaj Password';
+  const senderEmail = process.env.SMTP_USER || 'abidp0189@gmail.com';
+  // Use verified sender address as replyTo to guarantee SPF/DKIM alignment and prevent spam filtering
+  const replyTo = senderEmail;
+
+  // Generate a distinct 6-digit security reference code for this reset request
+  // Having a unique subject prevents Gmail from collapsing or grouping new resets into old conversation threads
+  const refCode = Math.floor(100000 + Math.random() * 900000);
+  const subject = `Password Reset [Security Code: ${refCode}] - Tomar Kaj`;
 
   const html = `
 <!DOCTYPE html>
@@ -84,20 +89,26 @@ async function sendPasswordResetEmail(toEmail, resetLink, userName) {
           <tr>
             <td style="padding:36px 40px;">
               <p style="margin:0 0 8px;font-size:22px;font-weight:800;color:#fff;">Password Reset Request</p>
-              <p style="margin:0 0 24px;font-size:14px;color:#9ca3af;line-height:1.6;">
+              <p style="margin:0 0 20px;font-size:14px;color:#9ca3af;line-height:1.6;">
                 Hi <strong style="color:#e5e7eb;">${userName}</strong>,<br/>
                 We received a request to reset the password for your Tomar Kaj account. 
-                Click the button below to set a new password. This link is valid for <strong style="color:#a78bfa;">1 hour</strong>.
+                Click the button below to set a new password. This link is valid for <strong style="color:#a78bfa;">24 hours</strong>.
               </p>
 
-              <div style="text-align:center;margin:32px 0;">
+              <!-- Security Code Banner -->
+              <div style="background:#1e1b4b;border:1px solid #4338ca;border-radius:14px;padding:16px;text-align:center;margin:20px 0;">
+                <span style="font-size:11px;color:#c7d2fe;text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:6px;font-weight:700;">Security Reference Code</span>
+                <span style="font-size:30px;font-weight:900;letter-spacing:8px;color:#ffffff;font-family:monospace;">${refCode}</span>
+              </div>
+
+              <div style="text-align:center;margin:28px 0;">
                 <a href="${resetLink}"
-                   style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:14px;font-weight:800;text-decoration:none;padding:14px 36px;border-radius:100px;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(124,58,237,0.4);">
+                   style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:14px;font-weight:800;text-decoration:none;padding:15px 40px;border-radius:100px;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(124,58,237,0.4);">
                   Reset My Password
                 </a>
               </div>
 
-              <p style="margin:0 0 16px;font-size:12px;color:#6b7280;line-height:1.6;">
+              <p style="margin:0 0 12px;font-size:12px;color:#6b7280;line-height:1.6;">
                 Or copy and paste this link into your browser:
               </p>
               <div style="background:#0d0d1a;border:1px solid #2a2a40;border-radius:10px;padding:12px 16px;word-break:break-all;">
@@ -105,7 +116,7 @@ async function sendPasswordResetEmail(toEmail, resetLink, userName) {
               </div>
 
               <p style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.6;">
-                If you didn't request a password reset, please ignore this email — your account is safe and your password won't change.
+                If you didn't request a password reset, please ignore this email — your account is safe and your password will not change.
               </p>
             </td>
           </tr>
@@ -114,7 +125,7 @@ async function sendPasswordResetEmail(toEmail, resetLink, userName) {
             <td style="padding:20px 40px;border-top:1px solid #2a2a40;text-align:center;">
               <p style="margin:0;font-size:11px;color:#4b5563;">
                 © 2026 Tomar Kaj. All rights reserved.<br/>
-                This is an automated message — please do not reply.
+                Automated security notification.
               </p>
             </td>
           </tr>
@@ -126,7 +137,7 @@ async function sendPasswordResetEmail(toEmail, resetLink, userName) {
 </html>
   `.trim();
 
-  const text = `Hi ${userName},\n\nReset your Tomar Kaj password by visiting the link below (valid for 1 hour):\n\n${resetLink}\n\nIf you did not request this, please ignore this email.\n\n— Tomar Kaj Team`;
+  const text = `Hi ${userName},\n\nWe received a password reset request for your Tomar Kaj account.\n\nSecurity Reference Code: ${refCode}\n\nReset link (valid for 24 hours):\n${resetLink}\n\nIf you did not request this, please ignore this email.\n\n— Tomar Kaj Team`;
 
   const transporter = getTransporter();
 
