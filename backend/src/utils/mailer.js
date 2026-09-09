@@ -1,52 +1,44 @@
 const nodemailer = require('nodemailer');
 
-// Build a transporter lazily so missing SMTP vars don't crash on startup
-let _transporter = null;
-
-function getTransporter() {
-  if (_transporter) return _transporter;
-
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+/**
+ * Creates a Nodemailer transport instance.
+ *
+ * CRITICAL FOR CLOUD HOSTS (Render / AWS / DigitalOcean):
+ * We enforce `family: 4` (IPv4) because cloud Linux containers lack outbound IPv6
+ * routing. Without `family: 4`, DNS resolves smtp.gmail.com to IPv6 (2607:f8b0:...),
+ * triggering: "connect ENETUNREACH ... - Local (:::0)".
+ */
+function createTransporter(port = 587) {
+  const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;
 
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    return null; // Will fall back to console logging
+    return null;
   }
 
   const cleanPass = SMTP_PASS.replace(/\s+/g, '');
-  const isGmail = (SMTP_HOST && SMTP_HOST.includes('gmail')) || (SMTP_USER && SMTP_USER.endsWith('@gmail.com'));
+  const isPort465 = parseInt(port, 10) === 465;
 
-  if (isGmail) {
-    _transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: SMTP_USER,
-        pass: cleanPass,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    });
-  } else {
-    _transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: parseInt(SMTP_PORT || '587', 10),
-      secure: parseInt(SMTP_PORT || '587', 10) === 465,
-      auth: {
-        user: SMTP_USER,
-        pass: cleanPass,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    });
-  }
-
-  return _transporter;
+  return nodemailer.createTransport({
+    host: SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(port, 10),
+    secure: isPort465, // true for 465 (SSL), false for 587 (STARTTLS)
+    family: 4,        // STRICTLY FORCE IPv4 — fixes Render ENETUNREACH
+    auth: {
+      user: SMTP_USER,
+      pass: cleanPass,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+  });
 }
 
 /**
  * Send a password reset email.
- * Falls back to console.log if SMTP is not configured (dev mode).
+ * Includes automatic IPv4 enforcement and port 587/465 fallback.
  *
  * @param {string} toEmail - Recipient email address
  * @param {string} resetLink - Full reset URL with token
@@ -54,7 +46,6 @@ function getTransporter() {
  */
 async function sendPasswordResetEmail(toEmail, resetLink, userName) {
   const senderEmail = process.env.SMTP_USER || 'abidp0189@gmail.com';
-  // Use verified sender address as replyTo to guarantee SPF/DKIM alignment and prevent spam filtering
   const replyTo = senderEmail;
 
   // Generate a distinct 6-digit security reference code for this reset request
@@ -139,23 +130,40 @@ async function sendPasswordResetEmail(toEmail, resetLink, userName) {
 
   const text = `Hi ${userName},\n\nWe received a password reset request for your Tomar Kaj account.\n\nSecurity Reference Code: ${refCode}\n\nReset link (valid for 24 hours):\n${resetLink}\n\nIf you did not request this, please ignore this email.\n\n— Tomar Kaj Team`;
 
-  const transporter = getTransporter();
+  const primaryPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  let transporter = createTransporter(primaryPort);
 
   if (!transporter) {
     console.error('❌ Cannot send email: SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are missing in environment variables.');
     throw new Error('Email service (SMTP) is not configured on this server. Please ensure SMTP_HOST, SMTP_USER, and SMTP_PASS are set in your environment variables (e.g. Render Dashboard).');
   }
 
-  const info = await transporter.sendMail({
+  const mailOptions = {
     from: `"Tomar Kaj" <${senderEmail}>`,
     replyTo,
     to: toEmail,
     subject,
     text,
     html,
-  });
+  };
 
-  return info;
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return info;
+  } catch (primaryErr) {
+    console.warn(`[Mailer] Primary send failed on port ${primaryPort}:`, primaryErr.message);
+    
+    // Automatic fallback: If 587 failed, try 465; if 465 failed, try 587
+    const fallbackPort = primaryPort === 465 ? 587 : 465;
+    console.info(`[Mailer] Attempting fallback to port ${fallbackPort} (IPv4)...`);
+
+    const fallbackTransporter = createTransporter(fallbackPort);
+    if (!fallbackTransporter) throw primaryErr;
+
+    const fallbackInfo = await fallbackTransporter.sendMail(mailOptions);
+    console.info(`[Mailer] Fallback send succeeded on port ${fallbackPort}!`);
+    return fallbackInfo;
+  }
 }
 
 module.exports = { sendPasswordResetEmail };
