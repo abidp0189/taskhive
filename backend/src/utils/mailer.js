@@ -142,14 +142,8 @@ async function sendPasswordResetEmail(toEmail, resetLink, userName) {
   const transporter = getTransporter();
 
   if (!transporter) {
-    // Dev fallback — log to console
-    console.log('\n======================================================');
-    console.log('📧 [DEV] Password Reset Email (SMTP not configured)');
-    console.log('  To     :', toEmail);
-    console.log('  Subject:', subject);
-    console.log('  Link   :', resetLink);
-    console.log('======================================================\n');
-    return { messageId: 'dev-console-fallback' };
+    console.error('❌ Cannot send email: SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are missing in environment variables.');
+    throw new Error('Email service (SMTP) is not configured on this server. Please ensure SMTP_HOST, SMTP_USER, and SMTP_PASS are set in your environment variables (e.g. Render Dashboard).');
   }
 
   const info = await transporter.sendMail({

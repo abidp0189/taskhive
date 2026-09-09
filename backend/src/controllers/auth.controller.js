@@ -331,7 +331,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     await sendPasswordResetEmail(user.email, resetLink, user.name);
   } catch (mailErr) {
     console.error('Failed to dispatch password reset email:', mailErr);
-    return error(res, 'Failed to send email. Please check SMTP configuration or try again in a few minutes.', 500);
+    return error(res, mailErr.message || 'Failed to send email. Please check SMTP configuration or try again in a few minutes.', 500);
   }
 
   return success(res, {}, 'Password reset link sent successfully! Please check your email inbox (and spam folder).');
